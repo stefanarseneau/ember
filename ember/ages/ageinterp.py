@@ -4,8 +4,7 @@ import pandas as pd
 import numpy as np
 
 import os, sys, glob, re
-agedir = os.environ['WDAGE_PATH']
-data_dir = os.path.join(agedir, "data")
+coolingdir = os.environ['COOLING_PATH']
 
 def parse_feh(path : str) -> float:
     """Extracts feh_xxxx and converts to float.
@@ -21,7 +20,7 @@ def parse_feh(path : str) -> float:
 def read_tracks(save : bool = False) -> pd.DataFrame:
     """read all of the tracks and generate a summary file that can be interpolated
     """
-    metalfolders = glob.glob(os.path.join(data_dir, "cooling_tracks", "*"))
+    metalfolders = glob.glob(os.path.join(coolingdir, "*"))
     datafiles = []
     for ii, metal in enumerate(metalfolders):
         coolfile = os.path.join(metal, f"{os.path.basename(metal)}.wdcool")
@@ -32,7 +31,7 @@ def read_tracks(save : bool = False) -> pd.DataFrame:
         datafiles.append(data.drop(labels=["log_Teff", "log_R"], axis=1))
     datafile = pd.concat(datafiles).reset_index(drop=True)
     if save is not None:
-        datafile.to_parquet(os.path.join(data_dir, "cooling_tracks", "summary.pqt"))
+        datafile.to_parquet(os.path.join(coolingdir, "summary.pqt"))
     return datafile
 
 def make_interpolator(datafile: pd.DataFrame, fe_h=None, outcol="log_age"):
@@ -130,10 +129,10 @@ def call_interp(fe_h = None, outcol = "log_age"):
     """call interpolator. designed to be used as the entry point
     for external files.
     """
-    if not os.path.isfile(os.path.join(data_dir, "cooling_tracks", "summary.pqt")):
+    if not os.path.isfile(os.path.join(cooling_dir, "summary.pqt")):
         datafile = read_tracks(save = True)
     else:
-        datafile = pd.read_parquet(os.path.join(data_dir, "cooling_tracks", "summary.pqt"))
+        datafile = pd.read_parquet(os.path.join(cooling_dir, "summary.pqt"))
     return make_interpolator(datafile, fe_h=fe_h, outcol = outcol)
 
     
