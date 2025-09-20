@@ -15,9 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-# If `app` is in ember/__init__.py:        ember = "ember:app"
-# If `app` is in ember/cli.py:             ember = "ember.cli:app"
-ember = "ember:app"
+ember = "ember.ember:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
