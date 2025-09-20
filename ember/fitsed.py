@@ -12,7 +12,7 @@ import pandas as pd
 import typer
 
 # local imports
-from mcmc import fitting, xpspec, util, photometry  # noqa: F401
+from .mcmc import fitting, xpspec, util, photometry  # noqa: F401
 import interpolator  # noqa: F401
 
 app = typer.Typer(add_completion=False, help="""

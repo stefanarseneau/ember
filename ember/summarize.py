@@ -12,8 +12,8 @@ import pandas as pd
 import typer
 from wdwarfdate.wdwarfdate import WhiteDwarf
 
-# --- your local imports (unchanged) ---
-from mcmc import util  # noqa: F401
+# --- local imports (unchanged) ---
+from .mcmc import util  # noqa: F401
 import MR_relation  # noqa: F401
 
 app = typer.Typer(add_completion=False, help="Summarize MCMC chains and (optionally) compute WD ages with wdwarfdate.")

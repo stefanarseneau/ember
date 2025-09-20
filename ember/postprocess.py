@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import typer
 
-from ages import chainhandler  # noqa: E402
+from .ages import chainhandler  # noqa: E402
 
 app = typer.Typer(add_completion=False, help="""
 Measure ages or hydrogen layer masses with monte carlo post-processing.
