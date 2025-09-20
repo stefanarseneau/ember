@@ -28,3 +28,5 @@ package-dir = {"" = "."}
 where = ["."]
 include = ["ember*"]
 
+[tool.setuptools.package-data]
+"ember" = ["**/*.csv"]
