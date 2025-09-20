@@ -1,9 +1,0 @@
-typer[all]
-astropy
-astroquery
-lmfit
-tqdm
-corner
-pyvo
-gaiaxpy
-interpolator@ git+https://github.com/stefanarseneau/wd_interpolator.git
