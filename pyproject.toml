@@ -5,20 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ember"
 version = "0.1.0"
+requires-python = ">=3.10"
 description = "EMBER : Estimating Mass and Bolometric properties of Evolved Remnants"
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = ["typer[all]", "astropy", "astroquery", "lmfit", "tqdm", "corner",
-		"pyvo", "gaiaxpy",
-		"interpolator @ git+https://github.com/stefanarseneau/wd_interpolator.git"]
+dependencies = [
+  "typer[all]", "astropy", "astroquery", "lmfit", "tqdm", "corner",
+  "pyvo", "gaiaxpy",
+  "interpolator @ git+https://github.com/stefanarseneau/wd_interpolator.git"
+]
 
-# Expose the Typer app object named `app` inside ember.py
 [project.scripts]
+# If `app` is in ember/__init__.py:        ember = "ember:app"
+# If `app` is in ember/cli.py:             ember = "ember.cli:app"
 ember = "ember:app"
 
 [tool.setuptools]
-# Tell setuptools that our modules live in ./src
 package-dir = {"" = "src"}
 
-# Since we have a single module file (ember.py), use py-modules
-py-modules = ["ember"]
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ember*"]     # include subpackages like ember.commands
+
