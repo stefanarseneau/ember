@@ -29,10 +29,10 @@ def find_existing_files(filenames, directory):
             existing.append(full_path)  # or just fname if you prefer
     return existing
 
-def get_split(chains : list[str], num_tasks : int) -> pd.DataFrame:
+def get_split(chains : list[str], numtasks : int) -> pd.DataFrame:
     """split the dataframe by the task id"""
     if num_tasks != 0:
-        chunks = np.array_split(chains, num_tasks)
+        chunks = np.array_split(chains, numtasks)
         task_id = os.getenv("SGE_TASK_ID")
         task_id = int(task_id) if task_id is not None else 1
         chain_segment = chunks[task_id-1]
@@ -67,7 +67,7 @@ def run_postprocess(
                                   help="Show a tqdm progress bar (default: show)."),
     uniform: bool = typer.Option(False, "--uniform/--gaussian", "-u/-g",
                                  help="Use uniform (True) vs gaussian (False) distributions."),
-    num_tasks: int = typer.Option(1, "--num-tasks", "-n", help="Number of CPU chunks (SGE array-style)."),
+    num_tasks: int = typer.Option(1, "--numtasks", "-n", help="Number of CPU chunks (SGE array-style)."),
 ):
     """
     Measure ages from WD chains. If --pqtpath is provided, chains are matched by
@@ -79,7 +79,7 @@ def run_postprocess(
         datafile = pd.read_parquet(pqtpath)
         candidates = [f"{file}.npy" for file in datafile.wd_source_id.astype(str)]
         chains = find_existing_files(candidates, chainpath)
-        chainseg, task_id = get_split(chains, num_tasks)
+        chainseg, task_id = get_split(chains, numtasks)
 
         # Match back to rows
         chname = [Path(ch).stem for ch in chainseg]
@@ -89,7 +89,7 @@ def run_postprocess(
         feh2_arr = get_array(feh2, df=matched_rows, fallback=0.0, length=len(matched_rows))
     else:
         chains = glob.glob(str(chainpath / "*.npy"))
-        chainseg, task_id = get_split(chains, num_tasks)
+        chainseg, task_id = get_split(chains, numtasks)
 
         # When not using parquet, feh1/feh2 must be floats (or '' -> fallback)
         feh1_arr = get_array(feh1, df=None, length=len(chainseg))           # raises if not float
@@ -120,7 +120,7 @@ def run_postprocess(
 
     # Optional logger save
     if logger and logdf is not None:
-        loggerpath = outpath / (f"logger_{task_id}.pqt" if num_tasks and num_tasks > 1 else "logger.pqt")
+        loggerpath = outpath / (f"logger_{task_id}.pqt" if numtasks and numtasks > 1 else "logger.pqt")
         logdf.to_parquet(loggerpath)
         typer.echo(f"Saved log to: {loggerpath}")
 

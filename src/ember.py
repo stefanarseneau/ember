@@ -1,11 +1,40 @@
 # ember.py
 import typer
 from typing import Optional
+from enum import Enum
 from pathlib import Path
+
+from pathlib import Path
+from typing import List, Optional, Literal
+import typer
 
 from fitsed import run_fitsed
 from postprocess import run_postprocess
 from summarize import run_summarize
+from submit import write_qsub_script, qsub_submit
+
+def _detect_numtasks(argv: list[str]) -> int:
+    """
+    Detect --numtasks from argv. Supports:
+      --numtasks N    and    --numtasks=N
+    Returns 1 if not present. Last occurrence wins.
+    """
+    found = None
+    for i, tok in enumerate(argv):
+        if (tok == "--numtasks" or tok == "-nt") and i + 1 < len(argv):
+            nxt = argv[i + 1]
+            if nxt and not nxt.startswith("-"):
+                try:
+                    found = int(nxt)
+                except ValueError:
+                    pass
+        elif tok.startswith("--numtasks=") or tok.startswith("-nt="):
+            try:
+                found = int(tok.split("=", 1)[1])
+            except ValueError:
+                pass
+    return found if (found is not None and found > 0) else 1
+
 
 app = typer.Typer(
     add_completion=False, 
@@ -37,6 +66,69 @@ papers, which EMBER is built on:
  - Bauer et al. 2025, ApJS, In Prep
 (see also Mark Hollands' mass-radius intepolation code: https://github.com/mahollands/MR_relation)
 """
+
+class SubCmd(str, Enum):
+    FIT_SED = "fit-sed"
+    POSTPROCESS = "postprocess"
+
+@app.command(
+    "submit",
+    help="Submit an EMBER job to SGE/UGE via qsub.",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def submit(
+    ctx: typer.Context,                                            # <— keep this
+    command: SubCmd = typer.Argument(..., help="EMBER subcommand"),
+    job_name: str = typer.Option("ember", "--job-name", "-N"),
+    logs: Path = typer.Option(Path("./logs"), "--logs"),
+    queue: Optional[str] = typer.Option(None, "--queue", "-q"),
+    project: Optional[str] = typer.Option(None, "--project", "-P"),
+    pe: Optional[str] = typer.Option(None, "--pe"),
+    slots: int = typer.Option(1, "--slots"),
+    mem: Optional[str] = typer.Option(None, "--mem"),
+    hours: Optional[int] = typer.Option(None, "--hours"),
+    email: Optional[str] = typer.Option(None, "--email"),
+    hold_jid: Optional[str] = typer.Option(None, "--hold-jid"),
+    conda_env: Optional[str] = typer.Option(None, "--conda-env"),
+    script_out: Optional[Path] = typer.Option(None, "--script-out"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+):
+    # pass through everything after the subcommand name unchanged
+    passthrough = list(ctx.args)
+
+    # infer array size only from --numtasks (default 1)
+    array_size = _detect_numtasks(passthrough)
+
+    ember_cmd = ["ember", command.value, *passthrough]
+    script_path = script_out or (logs / f"{job_name}.sh")
+
+    write_qsub_script(
+        script_path=script_path,
+        ember_cmd=ember_cmd,
+        job_name=job_name,
+        logs_dir=logs,
+        numtasks=array_size,  # only adds -t 1-N when > 1 (see note below)
+        queue=queue,
+        project=project,
+        pe=pe,
+        slots=slots,
+        mem=mem,
+        hours=hours,
+        email=email,
+        hold_jid=hold_jid,
+        conda_env=conda_env,
+    )
+
+    typer.echo(f"Wrote job script: {script_path}")
+    typer.echo(f"qsub {script_path}")
+    if dry_run:
+        return
+    res = qsub_submit(script_path)
+    if res.returncode == 0 and res.stdout.strip():
+        typer.echo(res.stdout.strip())
+    else:
+        typer.echo(res.stderr.strip())
+        raise typer.Exit(code=1)
 
 @app.command("fit-sed",
              help = """
@@ -179,7 +271,7 @@ def postprocess(
                                   help="Show a tqdm progress bar (default: show)."),
     uniform: bool = typer.Option(False, "--uniform/--gaussian", "-u/-g",
                                  help="Use uniform (True) vs gaussian (False) distributions."),
-    num_tasks: int = typer.Option(1, "--num-tasks", "-n", help="Number of CPU chunks (SGE array-style)."),
+    numtasks: int = typer.Option(1, "--num-tasks", "-n", help="Number of CPU chunks (SGE array-style)."),
 ):
     run_postprocess(
         chainpath = chainpath,
@@ -191,7 +283,7 @@ def postprocess(
         target = target,
         progress = progress,
         uniform = uniform,
-        num_tasks = num_tasks,
+        numtasks = numtasks,
     )
     typer.echo(f"summarize done")
 

@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 import pyvo
 
-from GaiaDR3XPspectracorrectionV1 import Gaia_Correction_V1
+from .GaiaDR3XPspectracorrectionV1 import Gaia_Correction_V1
 from gaiaxpy import generate, PhotometricSystem, apply_error_correction, calibrate
 from astroquery.gaia import Gaia
 Gaia.ROW_LIMIT = -1

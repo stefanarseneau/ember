@@ -8,10 +8,9 @@ version = "0.1.0"
 description = "EMBER : Estimating Mass and Bolometric properties of Evolved Remnants"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["typer[all]", "functools", "astropy", "astroquery", "lmfit", "tqdm", "corner",
+dependencies = ["typer[all]", "astropy", "astroquery", "lmfit", "tqdm", "corner",
 		"pyvo", "gaiaxpy",
-		"interpolator @ git+https://github.com/stefanarseneau/wd_interpolator.git",
-		"wdwarfdate @ https://github.com/rkiman/wdwarfdate.git"]
+		"interpolator @ git+https://github.com/stefanarseneau/wd_interpolator.git"]
 
 # Expose the Typer app object named `app` inside ember.py
 [project.scripts]
