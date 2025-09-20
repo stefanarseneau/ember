@@ -101,7 +101,7 @@ def submit(
     array_size = _detect_numtasks(passthrough)
 
     ember_cmd = ["ember", command.value, *passthrough]
-    script_path = script_out or (logs / f"{job_name}.sh")
+    script_path = script_out or (passthrough[1] / logs / f"{job_name}.sh")
 
     write_qsub_script(
         script_path=script_path,

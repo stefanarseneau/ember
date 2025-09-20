@@ -21,7 +21,6 @@ def _qsub_directives(
 ) -> List[str]:
     logs_dir.mkdir(parents=True, exist_ok=True)
     lines = [
-        "#$ -S /bin/bash",
         "#$ -cwd",
         "#$ -V",
         f"#$ -N {job_name}",
@@ -71,7 +70,7 @@ def write_qsub_script(
     if extra_exports:
         exports = "\n".join(f"export {k}={shlex.quote(v)}" for k, v in extra_exports.items())
 
-    prologue = f"""#!/bin/bash
+    prologue = f"""#!/bin/bash -l
 {os.linesep.join(directives)}
 
 set -euo pipefail
