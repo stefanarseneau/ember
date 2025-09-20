@@ -11,6 +11,7 @@ app = typer.Typer(
     add_completion=False, 
     help="""
 **EMBER** — (E)stimating (M)ass and (B)olometric properties of (E)volved (R)emnants
+  by Stefan Arseneau (Boston University)
 
 Fit white dwarf spectral energy distributions and convert
 them into ages and/or hydrogen layers.
