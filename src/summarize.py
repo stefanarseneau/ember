@@ -54,7 +54,7 @@ def measure_ages(datafile : pd.DataFrame, method : str) -> pd.DataFrame:
     logg, logg_err = datafile.logg.to_numpy(), datafile.std_gg.to_numpy()
     cov = datafile.cov_gt.to_numpy()
     # compute the ages using wdwarfdate
-    WD = WhiteDwarf(teff, teff_err, logg, logg_err, cov,
+    WD = WhiteDwarf(teff, teff_err, logg, logg_err,
                     model_wd='DA', feh='p0.00', vvcrit='0.0',
                     model_ifmr='Cummings_2018_PARSEC',
                     high_perc=84, low_perc=16, method='fast_test',

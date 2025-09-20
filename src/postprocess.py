@@ -8,10 +8,6 @@ import numpy as np
 import pandas as pd
 import typer
 
-# --- env & imports ---
-agedir = os.environ['WDAGE_PATH']
-sys.path.append(agedir)
-
 from ages import chainhandler  # noqa: E402
 
 app = typer.Typer(add_completion=False, help="""
