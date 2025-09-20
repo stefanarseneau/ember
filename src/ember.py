@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import List, Optional, Literal
 import typer
 
-from fitsed import run_fitsed
-from postprocess import run_postprocess
-from summarize import run_summarize
-from submit import write_qsub_script, qsub_submit
+from .fitsed import run_fitsed
+from .postprocess import run_postprocess
+from .summarize import run_summarize
+from .submit import write_qsub_script, qsub_submit
 
 def _detect_numtasks(argv: list[str]) -> int:
     """
