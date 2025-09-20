@@ -62,6 +62,7 @@ def write_qsub_script(
     email: Optional[str] = None,
     hold_jid: Optional[str] = None,
     conda_env: Optional[str] = None,
+    module: Optional[str] = "miniconda",
     extra_exports: Optional[dict[str, str]] = None,
 ) -> Path:
     directives = _qsub_directives(job_name, logs_dir, numtasks, queue, project, pe, slots, mem, hours, email, hold_jid)
@@ -74,7 +75,7 @@ def write_qsub_script(
 {os.linesep.join(directives)}
 
 set -euo pipefail
-{exports}
+module load {module}
 {'source ~/.bashrc && conda activate ' + shlex.quote(conda_env) if conda_env else ''}
 
 echo "Host: $(hostname)"

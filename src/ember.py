@@ -92,6 +92,7 @@ def submit(
     conda_env: Optional[str] = typer.Option(None, "--conda-env"),
     script_out: Optional[Path] = typer.Option(None, "--script-out"),
     dry_run: bool = typer.Option(False, "--dry-run"),
+    module: Optional[str] = typer.Option("miniconda", "--module"),
 ):
     # pass through everything after the subcommand name unchanged
     passthrough = list(ctx.args)
@@ -117,6 +118,7 @@ def submit(
         email=email,
         hold_jid=hold_jid,
         conda_env=conda_env,
+        module=module
     )
 
     typer.echo(f"Wrote job script: {script_path}")
