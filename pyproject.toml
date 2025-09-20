@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ember"
+version = "0.1.0"
+description = "EMBER : Estimating Mass and Bolometric properties of Evolved Remnants"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["typer[all]"]
+
+# Expose the Typer app object named `app` inside ember.py
+[project.scripts]
+ember = "ember:app"
+
+[tool.setuptools]
+# Tell setuptools that our modules live in ./src
+package-dir = {"" = "src"}
+
+# Since we have a single module file (ember.py), use py-modules
+py-modules = ["ember"]
