@@ -273,7 +273,7 @@ def postprocess(
                                   help="Show a tqdm progress bar (default: show)."),
     uniform: bool = typer.Option(False, "--uniform/--gaussian", "-u/-g",
                                  help="Use uniform (True) vs gaussian (False) distributions."),
-    numtasks: int = typer.Option(1, "--num-tasks", "-n", help="Number of CPU chunks (SGE array-style)."),
+    numtasks: int = typer.Option(1, "--numtasks", "-n", help="Number of CPU chunks (SGE array-style)."),
 ):
     run_postprocess(
         chainpath = chainpath,
