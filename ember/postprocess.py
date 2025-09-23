@@ -31,7 +31,7 @@ def find_existing_files(filenames, directory):
 
 def get_split(chains : list[str], numtasks : int) -> pd.DataFrame:
     """split the dataframe by the task id"""
-    if num_tasks != 0:
+    if numtasks != 0:
         chunks = np.array_split(chains, numtasks)
         task_id = os.getenv("SGE_TASK_ID")
         task_id = int(task_id) if task_id is not None else 1
@@ -67,7 +67,7 @@ def run_postprocess(
                                   help="Show a tqdm progress bar (default: show)."),
     uniform: bool = typer.Option(False, "--uniform/--gaussian", "-u/-g",
                                  help="Use uniform (True) vs gaussian (False) distributions."),
-    num_tasks: int = typer.Option(1, "--numtasks", "-n", help="Number of CPU chunks (SGE array-style)."),
+    numtasks: int = typer.Option(1, "--numtasks", "-n", help="Number of CPU chunks (SGE array-style)."),
 ):
     """
     Measure ages from WD chains. If --pqtpath is provided, chains are matched by

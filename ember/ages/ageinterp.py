@@ -129,10 +129,10 @@ def call_interp(fe_h = None, outcol = "log_age"):
     """call interpolator. designed to be used as the entry point
     for external files.
     """
-    if not os.path.isfile(os.path.join(cooling_dir, "summary.pqt")):
+    if not os.path.isfile(os.path.join(coolingdir, "summary.pqt")):
         datafile = read_tracks(save = True)
     else:
-        datafile = pd.read_parquet(os.path.join(cooling_dir, "summary.pqt"))
+        datafile = pd.read_parquet(os.path.join(coolingdir, "summary.pqt"))
     return make_interpolator(datafile, fe_h=fe_h, outcol = outcol)
 
     
