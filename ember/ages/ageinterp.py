@@ -1,10 +1,14 @@
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 from scipy.spatial import Delaunay
+from pathlib import Path
 import pandas as pd
 import numpy as np
+import tqdm
 
 import os, sys, glob, re
 coolingdir = os.environ['COOLING_PATH']
+
+from . import preprocess
 
 def parse_feh(path : str) -> float:
     """Extracts feh_xxxx and converts to float.
@@ -29,22 +33,21 @@ def parse_metadata(filename):
 def read_tracks(save : bool = False) -> pd.DataFrame:
     """read all of the tracks and generate a summary file that can be interpolated
     """
-    metalfolders = glob.glob(os.path.join(coolingdir, "*"))
+    metalfolders = glob.glob(os.path.join(coolingdir, "*/"))
+    metalfolders = [metalfolder[:-1] for metalfolder in metalfolders]
     datafiles = []
-    for ii, metal in enumerate(metalfolders):
-        coolfiles = glob.glob(os.path.join(metal, "Tracks", f"*.data"))
-        for coolfile in coolfiles:
-            metadata = parse_metadata(coolfile)
-            data = pd.DataFrame(
-                np.genfromtxt(coolfile,
-                skip_header=2,names=True),
-            )
-            data['fe_h'] = parse_feh(metal)*np.ones(len(data))
-            data['teff'] = 10**data['log_Teff']
-            data['radius'] = 10**data['log_R']
-            data["M_in"] = metadata["M_in"]
-            data["M_WD"] = metadata["M_WD"]
-            datafiles.append(data.drop(labels=["log_Teff", "log_R"], axis=1))
+    print("Building interpolator file...")
+    for ii, metal in tqdm.tqdm(enumerate(metalfolders), total = len(metalfolders)):
+        coolpath = os.path.join(metal, f"{os.path.basename(metal)}.wdcool")
+        tracks = os.path.join(metal, "Tracks")
+        agepath = preprocess.process_wdcool_with_tracks(Path(coolpath), Path(tracks))
+        # build the data
+        data = pd.DataFrame(np.genfromtxt(agepath, names=True))
+        data['fe_h'] = parse_feh(metal)*np.ones(len(data))
+        data['teff'] = 10**data['log_Teff']
+        data['radius'] = 10**data['log_R']
+        print(data)
+        datafiles.append(data.drop(labels=["log_Teff", "log_R"], axis=1))
     datafile = pd.concat(datafiles).reset_index(drop=True)
     if save is not None:
         datafile.to_parquet(os.path.join(coolingdir, "summary.pqt"))

@@ -65,4 +65,4 @@ def measure_chains(
     return outputs, logger, failed_files
 
 if __name__ == "__main__":
-    measure_chains("../data/wdms_widebinary_chains", outcol = "log_age", e_feh = 0.1)
+    measure_chains("../data/wdms_widebinary_chains", outcol = "log_tot_age", e_feh = 0.1)
