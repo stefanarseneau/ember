@@ -25,7 +25,7 @@ def interp_chain(chain : np.ndarray, feh : float | np.typing.ArrayLike, interpol
 def measure_chains(
         chains : list[str], 
         savepath : str,
-        outcol : str = "log_age",
+        outcol : str = "log_tot_age",
         feh1 :  float | np.typing.ArrayLike = 0,
         feh2 : float | np.typing.ArrayLike = 0,
         uniform : bool | np.typing.ArrayLike = False,
@@ -55,10 +55,10 @@ def measure_chains(
             else:
                 feharr = np.random.uniform(this_feh1, this_feh2, size=(chain.shape[0],))
 
-            val = interp_chain(chain, feharr, interp)
+            agecool = interp_chain(chain, feharr, interp)
             name = os.path.basename(chainfile).split('.')[0]
-            np.save(os.path.join(savepath, f"{name}.npy"), np.concatenate([chain, val[:,None]], axis=1))
-            logger.loc[len(logger)] = [name, this_feh1, this_feh2, this_uniform, np.mean(val), np.std(val)]
+            np.save(os.path.join(savepath, f"{name}.npy"), np.concatenate([chain, agecool[:,None]], axis=1))
+            logger.loc[len(logger)] = [name, this_feh1, this_feh2, this_uniform, np.mean(agecool), np.std(agecool)]
         except ValueError as e:
             print(f"{e} || failed to read index {ii}: {chainfile}")
             failed_files.append(chainfile)

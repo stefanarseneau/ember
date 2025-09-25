@@ -268,7 +268,7 @@ def postprocess(
     pqtpath: Optional[Path] = typer.Option(None, "--pqtpath", help="Parquet file with [Fe/H] values."),
     feh1: str = typer.Option("fe_h", "--feh1", "-f", help="First [Fe/H] value: float or column name."),
     feh2: str = typer.Option("", "--feh2", "-e", help="Second [Fe/H] value: float or column name."),
-    target: str = typer.Option("log_age", "--target", "-t", help="Column to interpolate onto."),
+    target: str = typer.Option("log_tot_age", "--target", "-t", help="Column to interpolate onto."),
     progress: bool = typer.Option(True, "--progress/--no-progress", "-p/-P",
                                   help="Show a tqdm progress bar (default: show)."),
     uniform: bool = typer.Option(False, "--uniform/--gaussian", "-u/-g",

@@ -17,18 +17,34 @@ def parse_feh(path : str) -> float:
     value = int(m.group(2)) / 100
     return sign * value
 
+def parse_metadata(filename):
+    metadata = {}
+    with open(filename) as f:
+        for line in f:
+            if line.startswith("# M_"):
+                key, value = line[1:].strip().split("=")
+                metadata[key.strip()] = float(value)
+    return metadata
+
 def read_tracks(save : bool = False) -> pd.DataFrame:
     """read all of the tracks and generate a summary file that can be interpolated
     """
     metalfolders = glob.glob(os.path.join(coolingdir, "*"))
     datafiles = []
     for ii, metal in enumerate(metalfolders):
-        coolfile = os.path.join(metal, f"{os.path.basename(metal)}.wdcool")
-        data = pd.DataFrame(np.genfromtxt(coolfile, names=True))
-        data['fe_h'] = parse_feh(metal)*np.ones(len(data))
-        data['teff'] = 10**data['log_Teff']
-        data['radius'] = 10**data['log_R']
-        datafiles.append(data.drop(labels=["log_Teff", "log_R"], axis=1))
+        coolfiles = glob.glob(os.path.join(metal, "Tracks", f"*.data"))
+        for coolfile in coolfiles:
+            metadata = parse_metadata(coolfile)
+            data = pd.DataFrame(
+                np.genfromtxt(coolfile,
+                skip_header=2,names=True),
+            )
+            data['fe_h'] = parse_feh(metal)*np.ones(len(data))
+            data['teff'] = 10**data['log_Teff']
+            data['radius'] = 10**data['log_R']
+            data["M_in"] = metadata["M_in"]
+            data["M_WD"] = metadata["M_WD"]
+            datafiles.append(data.drop(labels=["log_Teff", "log_R"], axis=1))
     datafile = pd.concat(datafiles).reset_index(drop=True)
     if save is not None:
         datafile.to_parquet(os.path.join(coolingdir, "summary.pqt"))
@@ -125,7 +141,7 @@ def make_interpolator(datafile: pd.DataFrame, fe_h=None, outcol="log_age"):
     return predict_log_age
 
 
-def call_interp(fe_h = None, outcol = "log_age"):
+def call_interp(fe_h = None, outcol = "log_tot_age"):
     """call interpolator. designed to be used as the entry point
     for external files.
     """
