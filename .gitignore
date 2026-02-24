@@ -1,0 +1,7 @@
+*.egg-info
+omnidwarf/**/*.npy
+omnidwarf/mcmc/*
+omnidwarf/merges/*
+omnidwarf/thick/*
+./logs
+
