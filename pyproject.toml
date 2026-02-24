@@ -1,0 +1,31 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ember"
+version = "0.1.0"
+description = "EMBER : Estimating Mass and Bolometric properties of Evolved Remnants"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "typer[all]", "astropy", "astroquery", "lmfit", "tqdm", "corner",
+  "pyvo", "gaiaxpy",
+]
+
+# Your Typer app object is in ember/ember.py as "app"
+[project.scripts]
+ember = "ember.ember:app"
+
+[tool.setuptools]
+# package root is the repo root (not a 'src' layout)
+package-dir = {"" = "."}
+
+# discover the whole "ember" package tree (ember/, ember/mcmc, ember/ages, ...)
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ember*"]
+
+[tool.setuptools.package-data]
+"ember" = ["**/*.csv"]
