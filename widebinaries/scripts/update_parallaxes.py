@@ -8,6 +8,7 @@ wb_companion_id and wb_binary_type.
 import numpy as np
 import pandas as pd
 FLUXES_PATH  = '../omnidwarf_fluxes.pqt'
+OUT_PATH = 'widebinary_fluxes.pqt'
 CATALOG_PATH = '/home/arseneau/observational/catalogs/elbadry_widebinary.pqt'
 R_CHANCE_MAX = 0.1
 
@@ -76,5 +77,5 @@ n_updated = fluxes['wb_companion_id'].notna().sum()
 print(f'WDs updated with weighted mean parallax: {n_updated}')
 
 fluxes = fluxes.reset_index(drop=True)
-fluxes.to_parquet(FLUXES_PATH)
-print(f'Saved to {FLUXES_PATH}')
+fluxes.to_parquet(OUT_PATH)
+print(f'Saved to {OUT_PATH}')
