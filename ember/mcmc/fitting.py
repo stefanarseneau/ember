@@ -60,6 +60,9 @@ def fit_mcmc(df : pd.DataFrame,
                      'units' : units,
                      'logg_function' : logg_function,
                     }
+        if (row.meanAV == 0):
+            loss_args['av_prior'] = (0.001, 0.0001)
+    
         if use_gravz:
             loss_args['vg_prior'] = (row.gravz, row.gravz_error)
         chain = interpolator.fit.mcmc_fit(likelihoods.mcmc_likelihood, loss_args, theta)
@@ -67,6 +70,7 @@ def fit_mcmc(df : pd.DataFrame,
         if outfile is not None:
             print(f"\n\nSaving to {outfile}/{df.gaia_dr3_source_id.values[i].astype(np.int64)}.npy\n\n")
             np.save(f"{outfile}/{df.gaia_dr3_source_id.values[i].astype(np.int64)}.npy", chain)
+            print(f"mean parameters: {np.mean(chain, axis=0)}")
     return df, chains
 
 def fit_leastsq(df : pd.DataFrame, 

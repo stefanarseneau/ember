@@ -67,81 +67,32 @@ def make_interpolator(datafile: pd.DataFrame, fe_h=None, outcol="log_age"):
         # Ensure numpy array, allow scalars/lists
         return np.asarray(x, dtype=np.float64)
 
-    if fe_h is not None:
         # ---------- 2D case: fixed metallicity ----------
         #df = datafile.query("fe_h == @fe_h").copy()
         #if len(df) == 0:
         #    raise ValueError(f"No rows for fe_h={fe_h}")
 
-        df = datafile.copy()
-        pts = df[["teff", "radius"]].to_numpy(np.float64)
-        vals = df[outcol].to_numpy(np.float64)
-
-        # light scaling improves conditioning
-        s_teff, s_radius = 1e-3, 1e2
-        P = np.c_[pts[:, 0] * s_teff, pts[:, 1] * s_radius]
-
-        # drop duplicate points
-        Puniq, idx = np.unique(P, axis=0, return_index=True)
-        V = vals[idx]
-
-        lin = LinearNDInterpolator(Puniq, V, fill_value=np.nan)
-        near = NearestNDInterpolator(Puniq, V)
-
-        def predict_log_age(teff, radius, feh=None):
-            teff = _as_array(teff)
-            radius = _as_array(radius)
-            # broadcast to common shape
-            teff, radius = np.broadcast_arrays(teff, radius)
-            X = np.column_stack([teff.ravel() * s_teff, radius.ravel() * s_radius])
-            y = lin(X)
-            # vectorized fallback for NaNs
-            #mask = np.isnan(y)
-            #if np.any(mask):
-            #    y[mask] = near(X[mask])
-            return y.reshape(teff.shape)
-
-        return predict_log_age
-
-    # ---------- 3D case: multiple metallicities ----------
     df = datafile.copy()
-    if len(df) == 0:
-        raise ValueError("Empty datafile")
-
-    pts_raw = df[["teff", "radius", "fe_h"]].to_numpy(np.float64)
+    pts = df[["teff", "radius"]].to_numpy(np.float64)
     vals = df[outcol].to_numpy(np.float64)
 
+    # light scaling improves conditioning
     s_teff, s_radius = 1e-3, 1e2
-    P = pts_raw.copy()
-    P[:, 0] *= s_teff
-    P[:, 1] *= s_radius
+    P = np.c_[pts[:, 0] * s_teff, pts[:, 1] * s_radius]
 
     # drop duplicate points
     Puniq, idx = np.unique(P, axis=0, return_index=True)
     V = vals[idx]
 
-    # robust Qhull options help with large/near-coplanar sets
-    tri = Delaunay(Puniq, qhull_options="QJ Qbb Q12")
-    lin = LinearNDInterpolator(tri, V, fill_value=np.nan)
-    near = NearestNDInterpolator(Puniq, V)
+    lin = LinearNDInterpolator(Puniq, V, fill_value=np.nan)
 
-    def predict_log_age(teff, radius, feh):
+    def predict_log_age(teff, radius, feh=None):
         teff = _as_array(teff)
         radius = _as_array(radius)
-        feh = _as_array(feh)
-
-        # broadcast all three to a common shape
-        teff, radius, feh = np.broadcast_arrays(teff, radius, feh)
-        X = np.column_stack([
-            teff.ravel() * s_teff,
-            radius.ravel() * s_radius,
-            feh.ravel(),
-        ])
-
+        # broadcast to common shape
+        teff, radius = np.broadcast_arrays(teff, radius)
+        X = np.column_stack([teff.ravel() * s_teff, radius.ravel() * s_radius])
         y = lin(X)
-        #mask = np.isnan(y)
-        #if np.any(mask):
-        #    y[mask] = near(X[mask])
         return y.reshape(teff.shape)
 
     return predict_log_age

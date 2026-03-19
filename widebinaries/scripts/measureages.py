@@ -9,48 +9,80 @@ from tqdm import tqdm
 tqdm.pandas()
 
 import multiprocessing as mp
+from scipy.interpolate import interp1d as _scipy_interp1d
 
 # ---- per-process globals ----
 _G_INTERP_TOT = None
 _G_INTERP_AGE = None
 _G_RAD_FUNC = None
+_G_HEINTZ_COOL = None
+_G_HEINTZ_IFMR = None
+_G_HEINTZ_TMS = None
 
 import sys, os, tqdm, glob
 wdmodels_dir = os.environ['WDMODELS_DIR']
 sys.path.append(wdmodels_dir)
 import WD_models
 
-#def radius_from_loggteff(loggarray : np.array, teffarray : np.array, 
-#                       low_model = 'be', mid_model = 'be', high_model = 'be',
-#                       atm_type = 'H') -> np.array:
-#    """compute the radial velocity from radius and effective temperature
-#    """
-#    mass_sun, radius_sun, newton_G, speed_light = 1.9884e30, 6.957e8, 6.674e-11, 299792458
-#    font_model = WD_models.load_model(low_model, mid_model, high_model, atm_type) 
-#    g_acc = (10**font_model['logg'])/100
-#    rsun = np.sqrt(font_model['mass_array'] * mass_sun * newton_G / g_acc) / radius_sun
-#    rad_teff_to_mass = WD_models.interp_xy_z_func(x = font_model['logg'], y = 10**font_model['logteff'],\
-#                                               z = rsun, interp_type = 'linear')
-#    return rad_teff_to_mass(loggarray, teffarray)
+mass_sun, radius_sun, newton_G = 1.9884e30, 6.957e8, 6.674e-11
 
-#def read_ages(row : pd.Series, chaindir : str):
-#    chainpath = os.path.join(chaindir, f"{row.sourceid}.npy")
-#    chain = np.load(chainpath)
-#    return np.mean(chain[:,-1]), np.std(chain[:,-1])
+_HEINTZ_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                 '..', '..', 'code_for_JJ', 'code_for_JJ', 'code_for_JJ')
+)
 
-#def measure_ages(samps, fehs, interp_tot, interp_age):
-#    rng = np.random.default_rng(1000)
-#    
-#    try:
-#        agetot = chainhandler.interp_chain(samps, np.squeeze(fehs), interp_tot)
-#        agecool = chainhandler.interp_chain(samps, np.squeeze(fehs), interp_age)
-#        return agetot[~np.isnan(agetot)], agecool[~np.isnan(agecool)]
-#    except:
-#        raise
+# Maps population name → (WD_models model string, atmosphere type)
+_POP_MODEL_MAP = {
+    'thick': ('Bedard2020',      'H'),
+    'thin':  ('Bedard2020',      'He'),
+    'mixed': ('Bedard2020_thin', 'H'),
+}
 
-def _init_worker():
+
+def _load_heintz_interps(pop_type):
+    """Build cooling-age, IFMR, and MS-lifetime interpolators for high-mass WDs.
+
+    Cooling ages use Bedard 2020 WD_models cooling tracks (model choice depends
+    on population).  IFMR and MS lifetimes come from data files in
+    code_for_JJ (Heintz et al. 2024).
+    """
+    bedard_model, atm_type = _POP_MODEL_MAP[pop_type]
+
+    model = WD_models.load_model(bedard_model, bedard_model, bedard_model, atm_type)
+    g_acc    = (10 ** model["logg"]) / 100.0      # cm s⁻² → m s⁻²
+    rsun_arr = np.sqrt(model["mass_array"] * mass_sun * newton_G / g_acc) / radius_sun
+
+    # (Teff [K], radius [R_sun]) → cooling age [Gyr]
+    cool_func = WD_models.interp_xy_z_func(
+        x=10 ** model["logteff"], y=rsun_arr, z=model["age_cool"],
+        interp_type="linear",
+    )
+
+    # IFMR: final WD mass → initial (progenitor) mass
+    # The offset a=0.06367 is taken directly from SEDs_WDMS_v5.py (Heintz+2024);
+    # its origin is not documented there — verify before publication.
+    ifmr_data = pd.read_csv(
+        os.path.join(_HEINTZ_DIR, 'MESA_IFMR', 'MESA_IFMR_missing_one_point.csv')
+    )
+    a = 0.06367
+    IFMR_func = _scipy_interp1d(
+        ifmr_data['M_final'].to_numpy() + a,
+        ifmr_data['M_initial'].to_numpy(),
+        kind='linear', fill_value=np.nan, bounds_error=False,
+    )
+
+    # MS lifetime: initial mass [M_sun] → MS lifetime [Gyr]
+    mi  = np.load(os.path.join(_HEINTZ_DIR, 'init_mass_to_mslife', 'mi.npy'))
+    msl = np.load(os.path.join(_HEINTZ_DIR, 'init_mass_to_mslife', 'msl.npy'))
+    t_ms_func = _scipy_interp1d(mi, msl, fill_value='extrapolate', bounds_error=False)
+
+    return cool_func, IFMR_func, t_ms_func
+
+
+def _init_worker(pop_type='thick'):
     """Runs once per process: build interpolators + radius interpolator in the worker."""
-    global _G_INTERP_TOT, _G_INTERP_AGE, _G_RAD_FUNC
+    global _G_INTERP_TOT, _G_INTERP_AGE, _G_RAD_FUNC, _G_LOGG_FUNC
+    global _G_HEINTZ_COOL, _G_HEINTZ_IFMR, _G_HEINTZ_TMS
 
     from ember.ages import ageinterp
     _G_INTERP_TOT = ageinterp.call_interp(fe_h=0, outcol="log_tot_age")
@@ -63,9 +95,8 @@ def _init_worker():
         sys.path.append(wdmodels_dir)
     import WD_models
 
-    mass_sun, radius_sun, newton_G = 1.9884e30, 6.957e8, 6.674e-11
 
-    font_model = WD_models.load_model("be", "be", "be", "H")
+    font_model = WD_models.load_model("bet", "be", "ONe", "H")
     g_acc = (10**font_model["logg"]) / 100.0
     rsun = np.sqrt(font_model["mass_array"] * mass_sun * newton_G / g_acc) / radius_sun
 
@@ -76,11 +107,33 @@ def _init_worker():
         interp_type="linear",
     )
 
+    _G_LOGG_FUNC = WD_models.interp_xy_z_func(
+        x=rsun,
+        y=10**font_model["logteff"],
+        z=font_model["logg"],
+        interp_type="linear",
+    )
+
+    _G_HEINTZ_COOL, _G_HEINTZ_IFMR, _G_HEINTZ_TMS = _load_heintz_interps(pop_type)
+
 def _compute_one(args):
     """
     Return (ii, lac, lac_hi, lac_lo, lat, lat_hi, lat_lo) or (ii, None,...)
     """
-    ii, teff, e_teff, logg, e_logg, filled_row = args
+    ii, teff, e_teff, radius, e_radius, mass, filled_row = args
+    
+    #logg = np.log10(100 * (newton_G * mass * mass_sun) / ((radius*radius_sun)**2))
+    #e_logg = (2 / np.log(10)) * (e_radius / radius)
+    #WD = WhiteDwarf(teff, e_teff, logg, e_logg, 
+    #            model_wd='DA', feh='p0.00', vvcrit='0.0',
+    #            model_ifmr='Cummings_2018_MIST',
+    #            high_perc=84, low_perc=16, method='fast_test',
+    #            datatype='log', save_plots=False,
+    #            display_plots=False)
+    #WD.calc_wd_age()
+    #results = WD.results_fast_test
+    #cc_age = results['cooling_age_median'][0]
+    #tt_age = results['total_age_median'][0]
 
     if np.all(np.isfinite(filled_row)):
         return (ii, None, None, None, None, None, None)
@@ -89,9 +142,7 @@ def _compute_one(args):
     rng = np.random.default_rng(12345 + ii)
 
     samps_teff = rng.normal(teff, e_teff, size=10000)
-    samps_logg = rng.normal(logg, e_logg, size=10000)
-
-    samps_radii = _G_RAD_FUNC(samps_logg, samps_teff)
+    samps_radii = rng.normal(radius, e_radius, size=10000)
     samps = np.column_stack([samps_teff, samps_radii])
 
     fehs = rng.uniform(-0.2, 0.1, size=10000)
@@ -100,15 +151,45 @@ def _compute_one(args):
     if mask.sum() < 100:
         return (ii, None, None, None, None, None, None)
 
-    from ember.ages import chainhandler
-    agetot = chainhandler.interp_chain(samps[mask], fehs[mask], _G_INTERP_TOT)
-    agecool = chainhandler.interp_chain(samps[mask], fehs[mask], _G_INTERP_AGE)
+    if (mass > 0.512609) and (mass < 1.017626):
+        from ember.ages import chainhandler
+        agecool = chainhandler.interp_chain(samps[mask], fehs[mask], _G_INTERP_AGE)
+        agecool = agecool[~np.isnan(agecool)]
+        if mass > 0.63:
+            agetot = chainhandler.interp_chain(samps[mask], fehs[mask], _G_INTERP_TOT)
+            agetot = agetot[~np.isnan(agetot)]
+        else:
+            agetot = np.nan*np.zeros_like(agecool)
 
-    if not (isinstance(agetot, np.ndarray) and isinstance(agecool, np.ndarray)):
-        return (ii, None, None, None, None, None, None)
-    if agetot.size == 0 or agecool.size == 0:
+    elif (mass <= 0.512609):
+        # get cooling ages from Bedard 2020 (population-appropriate model)
+        cool_gyr = _G_HEINTZ_COOL(samps[mask, 0], samps[mask, 1])
+        valid = np.isfinite(cool_gyr) & (cool_gyr > 0)
+        agecool = np.log10(cool_gyr[valid]) + 9  # log10(yr)
+        agetot = np.nan * np.zeros_like(agecool)
+
+    elif (mass >= 1.017626):
+        # Cooling age from Bedard 2020 via Heintz+2024 method
+        cool_gyr = _G_HEINTZ_COOL(samps[mask, 0], samps[mask, 1])
+        valid = np.isfinite(cool_gyr) & (cool_gyr > 0)
+        cool_gyr = cool_gyr[valid]
+        agecool = np.log10(cool_gyr) + 9  # log10(yr)
+
+        # Total age: cooling + MS lifetime via IFMR
+        init_mass = float(_G_HEINTZ_IFMR(mass))
+        if np.isfinite(init_mass):
+            ms_life_gyr = float(_G_HEINTZ_TMS(init_mass))
+            tot_gyr = np.maximum(ms_life_gyr + cool_gyr, 1e-6)
+            agetot = np.log10(tot_gyr) + 9  # log10(yr)
+        else:
+            agetot = np.nan * np.zeros_like(agecool)
+
+    else:
         return (ii, None, None, None, None, None, None)
 
+    if (not (isinstance(agetot, np.ndarray) and isinstance(agecool, np.ndarray))) or (agetot.size < 100 or agecool.size < 100):
+        return (ii, None, None, None, None, None, None)
+    
     return (
         ii,
         np.percentile(agecool, 50),
@@ -119,17 +200,19 @@ def _compute_one(args):
         np.percentile(agetot, 16),
     )
 
-def parallel_forloop(outdata, outpath, nproc=None, chunksize=50):
+def parallel_forloop(outdata, outpath, pop_type='thick', nproc=None, chunksize=50):
     """
     Parallelizes the loop. Parent process applies results to outdata + checkpoints parquet.
+    pop_type: 'thick', 'thin', or 'mixed' — selects the Bedard WD model for high-mass WDs.
     """
     cols = ["log_age_cool","log_age_cool_hi","log_age_cool_lo","log_age","log_age_hi","log_age_lo"]
 
     # extract only what workers need (fast + avoids pickling the DataFrame)
-    teff  = outdata["teff"].to_numpy(dtype=float)
-    e_teff = outdata["e_teff"].to_numpy(dtype=float)
-    logg  = outdata["logg"].to_numpy(dtype=float)
-    e_logg = outdata["e_logg"].to_numpy(dtype=float)
+    teff  = outdata["teff_best"].to_numpy(dtype=float)
+    e_teff = outdata["std_tt_best"].to_numpy(dtype=float)
+    radius  = outdata["radius_best"].to_numpy(dtype=float)
+    e_radius = outdata["std_rr_best"].to_numpy(dtype=float)
+    mass_estimate = outdata["mass_best"].to_numpy(dtype=float)
     filled = outdata[cols].to_numpy(dtype=float)
 
     n = len(outdata)
@@ -137,18 +220,16 @@ def parallel_forloop(outdata, outpath, nproc=None, chunksize=50):
         nproc = max(1, mp.cpu_count() - 1)
 
     ctx = mp.get_context("fork")  # Linux: avoids spawn/pickle headaches
-    with ctx.Pool(processes=nproc, initializer=_init_worker) as pool:
+    with ctx.Pool(processes=nproc, initializer=_init_worker, initargs=(pop_type,)) as pool:
         # imap_unordered: better load balancing
         it = pool.starmap_async  # not iterable; so use imap_unordered with an args generator
 
         def arggen():
             for ii in range(n):
-                yield (ii, teff[ii], e_teff[ii], logg[ii], e_logg[ii], filled[ii])
+                yield (ii, teff[ii], e_teff[ii], radius[ii], e_radius[ii], mass_estimate[ii], filled[ii])
 
         for k, res in enumerate(tqdm.tqdm(pool.imap_unordered(_compute_one, arggen(), chunksize=chunksize), total=n)):
             ii, lac, lac_hi, lac_lo, lat, lat_hi, lat_lo = res
-            if lac is None:
-                continue
 
             idx = outdata.index[ii]  # robust even if index not 0..N-1
             outdata.loc[idx, "log_age_cool"] = lac
@@ -157,6 +238,8 @@ def parallel_forloop(outdata, outpath, nproc=None, chunksize=50):
             outdata.loc[idx, "log_age"] = lat
             outdata.loc[idx, "log_age_hi"] = lat_hi
             outdata.loc[idx, "log_age_lo"] = lat_lo
+            #outdata.loc[idx, "cool_age"] = cc
+            #outdata.loc[idx, "total_age"] = tt
 
             # checkpoint occasionally (based on results applied, not ii)
             if (k + 1) % 1000 == 0:
@@ -173,53 +256,28 @@ if __name__ == "__main__":
     parser.add_argument('outpath', type=str, default = 'targets_out.pqt', help='Path to output pqt file')
     args = parser.parse_args()
 
-    data = pd.read_parquet(args.inpath).dropna()
-    teffs = data["teff"].to_numpy() ; e_teffs = data["e_teff"].to_numpy()
-    loggs = data["logg"].to_numpy() ; e_loggs = data["e_logg"].to_numpy()
-    covars = data["covar"].to_numpy()
-    
-    #samps_teff = np.random.normal(teffs[:,None], e_teffs[:,None], size=(teffs.shape[0], 1000))
-    #samps_logg = np.random.normal(loggs[:,None], e_loggs[:,None], size=(loggs.shape[0], 1000))
-    #samps_radii = radius_from_loggteff(samps_logg, samps_teff)
-    #radii = np.nanmean(samps_radii, axis=1) ; e_radii = np.nanstd(samps_radii, axis=1)
-    
-    #samps = np.transpose(np.stack([samps_teff, samps_radii]), [1,2,0])
-    #fehs = np.random.uniform(-0.2, 0.1, size=(len(data), 1000))
-    #masks = np.all(~np.isnan(samps), axis=2)
-    
+    # Infer population type from input filename for Bedard model selection
+    inbase = os.path.basename(args.inpath).lower()
+    if 'mixed' in inbase:
+        pop_type = 'mixed'
+    elif 'thin' in inbase:
+        pop_type = 'thin'
+    else:
+        pop_type = 'thick'
+
+    data = pd.read_parquet(args.inpath)#.dropna()
+    teffs = data["teff_best"].to_numpy() ; e_teffs = data["std_tt_best"].to_numpy()
+    loggs = data["radius_best"].to_numpy() ; e_loggs = data["std_rr_best"].to_numpy()
+    covars = data["cov_rt_best"].to_numpy()
+
     interp_tot = ageinterp.call_interp(fe_h = None, outcol = "log_tot_age")
     interp_age = ageinterp.call_interp(fe_h = None, outcol = "log_age")
-    print(type(interp_tot))
 
-    try:
-        outdata = pd.read_parquet(args.outpath)
-    except FileNotFoundError:
-        outdata = data.copy()
+    outdata = data.copy()
+    outdata["log_age_cool"] = np.nan       ;   outdata["log_age"] = np.nan
+    outdata["log_age_cool_hi"] = np.nan    ;   outdata["log_age_hi"] = np.nan
+    outdata["log_age_cool_lo"] = np.nan    ;   outdata["log_age_lo"] = np.nan
+    #outdata["cool_age"] = np.nan           ;   outdata["total_age"] = np.nan
 
-        outdata["log_age_cool"] = np.nan       ;   outdata["log_age"] = np.nan
-        outdata["log_age_cool_hi"] = np.nan    ;   outdata["log_age_hi"] = np.nan
-        outdata["log_age_cool_lo"] = np.nan    ;   outdata["log_age_lo"] = np.nan
-
-    #for ii, row in tqdm.tqdm(outdata.iterrows(), total=len(outdata)):
-    #    if np.all(~np.isnan(row[["log_age_cool", "log_age_cool_hi", "log_age_cool_lo",
-    #                             "log_age", "log_age_hi", "log_age_lo"]].values)):
-    #        continue
-    #
-    #    mask = masks[ii]
-    #    if mask.sum() < 100:
-    #        continue
-    #
-    #    agetot, agecool = measure_ages(samps[ii, mask], fehs[ii, mask], interp_tot, interp_age)
-    #    if isinstance(agetot, np.ndarray) and isinstance(agecool, np.ndarray):
-    #        outdata.loc[ii, "log_age_cool"] = np.percentile(agecool, 50)
-    #        outdata.loc[ii, "log_age_cool_hi"] = np.percentile(agecool, 84)
-    #        outdata.loc[ii, "log_age_cool_lo"] = np.percentile(agecool, 16)
-    #        outdata.loc[ii, "log_age"] = np.percentile(agetot, 50)
-    #        outdata.loc[ii, "log_age_hi"] = np.percentile(agetot, 84)
-    #        outdata.loc[ii, "log_age_lo"] = np.percentile(agetot, 16) 
-    #
-    #    if ii % 1000 == 0:
-    #        outdata.to_parquet(args.outpath)
-
-    outdata = parallel_forloop(outdata, args.outpath)
+    outdata = parallel_forloop(outdata, args.outpath, pop_type=pop_type)
     outdata.to_parquet(args.outpath)

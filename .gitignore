@@ -1,4 +1,5 @@
 *.egg-info
+./omnidwarf
 ./widebinaries/data/*
-./widebinaries/chains/*
+./widebinaries/chains/**/*.npy
 
