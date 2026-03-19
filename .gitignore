@@ -1,7 +1,4 @@
 *.egg-info
-omnidwarf/**/*.npy
-omnidwarf/mcmc/*
-omnidwarf/merges/*
-omnidwarf/thick/*
-./logs
+./widebinaries/data/*
+./widebinaries/chains/*
 
