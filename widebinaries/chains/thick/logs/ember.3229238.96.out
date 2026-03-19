@@ -1,0 +1,462 @@
+Host: scc-ul1
+Job:  ember  ID: 3229238  Task: 96
+Cmd:  ember fit-sed widebinaries/widebinary_fluxes.pqt widebinaries/chains/thick/ --synthetic --xpphoto --numtasks=128
+Warning: the passwords of all user accounts have been inactivated.              Please visit https://cas.cosmos.esa.int/cas/passwd to set a new one. Workaround solutions for the Gaia Archive issues following the infrastructure upgrade: https://www.cosmos.esa.int/web/gaia/news#WorkaroundArchive
+['synthetic']
+Total rows before filtering: 9477
+Rows remaining after removing existing chains: 9476
+Rows in this SGE task segment: 74
+Bands selected: synthetic
+Output directory: /projectnb/mesaelm/ember/widebinaries/chains/thick
+mcmc
+Bypassing Gaia archive queries temporarily with $EMBER_DIR/widebinaries/widebinary_fluxes.pqt
+Nedler mode returns no errors, so assuming 5% error universally!
+[1.49290834 1.42003037 1.34610476 1.27218875 1.19762042 1.13007946
+ 1.05509361 0.99733563 0.93015207 0.88181679 0.82898061 0.78163521
+ 0.73503799 0.69541353 0.66619626 0.62154845 0.58866829 0.56235899
+ 0.53157587 0.50467257 0.47871176 0.45783258 0.43639439 0.41680978]
+Gaia DR3 5372271984352171392
+
+
+Saving to widebinaries/chains/thick/5372271984352171392.npy
+
+
+Gaia DR3 5236283772049398784
+
+
+Saving to widebinaries/chains/thick/5236283772049398784.npy
+
+
+Gaia DR3 3573139462848262272
+
+
+Saving to widebinaries/chains/thick/3573139462848262272.npy
+
+
+Gaia DR3 5368670125999103232
+
+
+Saving to widebinaries/chains/thick/5368670125999103232.npy
+
+
+Gaia DR3 791015813513535232
+
+
+Saving to widebinaries/chains/thick/791015813513535232.npy
+
+
+Gaia DR3 4020741021494570624
+
+
+Saving to widebinaries/chains/thick/4020741021494570624.npy
+
+
+Gaia DR3 3587643567409849856
+
+
+Saving to widebinaries/chains/thick/3587643567409849856.npy
+
+
+Gaia DR3 3589329050014468992
+
+
+Saving to widebinaries/chains/thick/3589329050014468992.npy
+
+
+Gaia DR3 3573593247618065024
+
+
+Saving to widebinaries/chains/thick/3573593247618065024.npy
+
+
+Gaia DR3 5381363060023849728
+
+
+Saving to widebinaries/chains/thick/5381363060023849728.npy
+
+
+Gaia DR3 3465478819015079296
+
+
+Saving to widebinaries/chains/thick/3465478819015079296.npy
+
+
+Gaia DR3 3463290893955403776
+
+
+Saving to widebinaries/chains/thick/3463290893955403776.npy
+
+
+Gaia DR3 3600567119706197632
+
+
+Saving to widebinaries/chains/thick/3600567119706197632.npy
+
+
+Gaia DR3 3587227913357426432
+
+
+Saving to widebinaries/chains/thick/3587227913357426432.npy
+
+
+Gaia DR3 3896044067758716032
+
+
+Saving to widebinaries/chains/thick/3896044067758716032.npy
+
+
+Gaia DR3 5368787185326250880
+
+
+Saving to widebinaries/chains/thick/5368787185326250880.npy
+
+
+Gaia DR3 5236126228374051456
+
+
+Saving to widebinaries/chains/thick/5236126228374051456.npy
+
+
+Gaia DR3 3974906642339980544
+
+
+Saving to widebinaries/chains/thick/3974906642339980544.npy
+
+
+Gaia DR3 3587334535920042880
+
+
+Saving to widebinaries/chains/thick/3587334535920042880.npy
+
+
+Gaia DR3 3912311376651444224
+
+
+Saving to widebinaries/chains/thick/3912311376651444224.npy
+
+
+Gaia DR3 5188757622457410944
+
+
+Saving to widebinaries/chains/thick/5188757622457410944.npy
+
+
+Gaia DR3 3571817128318983424
+
+
+Saving to widebinaries/chains/thick/3571817128318983424.npy
+
+
+Gaia DR3 3571410137217145856
+
+
+Saving to widebinaries/chains/thick/3571410137217145856.npy
+
+
+Gaia DR3 4021220202405718144
+
+
+Saving to widebinaries/chains/thick/4021220202405718144.npy
+
+
+Gaia DR3 3974470239303115648
+
+
+Saving to widebinaries/chains/thick/3974470239303115648.npy
+
+
+Gaia DR3 4005438916307756928
+
+
+Saving to widebinaries/chains/thick/4005438916307756928.npy
+
+
+Gaia DR3 4019734594693512704
+
+
+Saving to widebinaries/chains/thick/4019734594693512704.npy
+
+
+Gaia DR3 3492203484216217856
+
+
+Saving to widebinaries/chains/thick/3492203484216217856.npy
+
+
+Gaia DR3 5233446276144989184
+
+
+Saving to widebinaries/chains/thick/5233446276144989184.npy
+
+
+Gaia DR3 3922780754573245568
+
+
+Saving to widebinaries/chains/thick/3922780754573245568.npy
+
+
+Gaia DR3 3922795941576557184
+
+
+Saving to widebinaries/chains/thick/3922795941576557184.npy
+
+
+Gaia DR3 840622479622035712
+
+
+Saving to widebinaries/chains/thick/840622479622035712.npy
+
+
+Gaia DR3 3897577164925150080
+
+
+Saving to widebinaries/chains/thick/3897577164925150080.npy
+
+
+Gaia DR3 5381500395897828864
+
+
+Saving to widebinaries/chains/thick/5381500395897828864.npy
+
+
+Gaia DR3 3588004001063062912
+
+
+Saving to widebinaries/chains/thick/3588004001063062912.npy
+
+
+Gaia DR3 5371002907415735552
+
+
+Saving to widebinaries/chains/thick/5371002907415735552.npy
+
+
+Gaia DR3 1075991635244641920
+
+
+Saving to widebinaries/chains/thick/1075991635244641920.npy
+
+
+Gaia DR3 3542729960522590720
+
+
+Saving to widebinaries/chains/thick/3542729960522590720.npy
+
+
+Gaia DR3 3490870876122061184
+
+
+Saving to widebinaries/chains/thick/3490870876122061184.npy
+
+
+Gaia DR3 4031789429728599040
+
+
+Saving to widebinaries/chains/thick/4031789429728599040.npy
+
+
+Gaia DR3 3975115240311668096
+
+
+Saving to widebinaries/chains/thick/3975115240311668096.npy
+
+
+Gaia DR3 4034132866962718848
+
+
+Saving to widebinaries/chains/thick/4034132866962718848.npy
+
+
+Gaia DR3 5371194879573178880
+
+
+Saving to widebinaries/chains/thick/5371194879573178880.npy
+
+
+Gaia DR3 864374439042403584
+
+
+Saving to widebinaries/chains/thick/864374439042403584.npy
+
+
+Gaia DR3 5368410984863209216
+
+
+Saving to widebinaries/chains/thick/5368410984863209216.npy
+
+
+Gaia DR3 3487047152639287680
+
+
+Saving to widebinaries/chains/thick/3487047152639287680.npy
+
+
+Gaia DR3 5371323037098666880
+
+
+Saving to widebinaries/chains/thick/5371323037098666880.npy
+
+
+Gaia DR3 3493896697763427328
+
+
+Saving to widebinaries/chains/thick/3493896697763427328.npy
+
+
+Gaia DR3 864591691372414976
+
+
+Saving to widebinaries/chains/thick/864591691372414976.npy
+
+
+Gaia DR3 5379825113838411904
+
+
+Saving to widebinaries/chains/thick/5379825113838411904.npy
+
+
+Gaia DR3 3899224134560212736
+
+
+Saving to widebinaries/chains/thick/3899224134560212736.npy
+
+
+Gaia DR3 3494590450944928128
+
+
+Saving to widebinaries/chains/thick/3494590450944928128.npy
+
+
+Gaia DR3 3975039374009241344
+
+
+Saving to widebinaries/chains/thick/3975039374009241344.npy
+
+
+Gaia DR3 5378112697492965888
+
+
+Saving to widebinaries/chains/thick/5378112697492965888.npy
+
+
+Gaia DR3 5368933905718559232
+
+
+Saving to widebinaries/chains/thick/5368933905718559232.npy
+
+
+Gaia DR3 3460104646697990528
+
+
+Saving to widebinaries/chains/thick/3460104646697990528.npy
+
+
+Gaia DR3 3460104577978512640
+
+
+Saving to widebinaries/chains/thick/3460104577978512640.npy
+
+
+Gaia DR3 3572083278852989568
+
+
+Saving to widebinaries/chains/thick/3572083278852989568.npy
+
+
+Gaia DR3 842157565357087744
+
+
+Saving to widebinaries/chains/thick/842157565357087744.npy
+
+
+Gaia DR3 5369060727501878784
+
+
+Saving to widebinaries/chains/thick/5369060727501878784.npy
+
+
+Gaia DR3 3999583737716615552
+
+
+Saving to widebinaries/chains/thick/3999583737716615552.npy
+
+
+Gaia DR3 791138993175412480
+
+
+Saving to widebinaries/chains/thick/791138993175412480.npy
+
+
+Gaia DR3 5371279881265639168
+
+
+Saving to widebinaries/chains/thick/5371279881265639168.npy
+
+
+Gaia DR3 3467606855051619072
+
+
+Saving to widebinaries/chains/thick/3467606855051619072.npy
+
+
+Gaia DR3 5378021983487484288
+
+
+Saving to widebinaries/chains/thick/5378021983487484288.npy
+
+
+Gaia DR3 5343562846716478208
+
+
+Saving to widebinaries/chains/thick/5343562846716478208.npy
+
+
+Gaia DR3 3918478777889551744
+
+
+Saving to widebinaries/chains/thick/3918478777889551744.npy
+
+
+Gaia DR3 3486338860992344064
+
+
+Saving to widebinaries/chains/thick/3486338860992344064.npy
+
+
+Gaia DR3 3920275276810355072
+
+
+Saving to widebinaries/chains/thick/3920275276810355072.npy
+
+
+Gaia DR3 3920275276810355200
+
+
+Saving to widebinaries/chains/thick/3920275276810355200.npy
+
+
+Gaia DR3 4007266334697369856
+
+
+Saving to widebinaries/chains/thick/4007266334697369856.npy
+
+
+Gaia DR3 3572106055062352768
+
+
+Saving to widebinaries/chains/thick/3572106055062352768.npy
+
+
+Gaia DR3 5377861317357370240
+
+
+Saving to widebinaries/chains/thick/5377861317357370240.npy
+
+
+Gaia DR3 1075215414395152640
+
+
+Saving to widebinaries/chains/thick/1075215414395152640.npy
+
+
+fit-sed done

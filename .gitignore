@@ -2,4 +2,4 @@
 ./omnidwarf
 ./widebinaries/data/*
 ./widebinaries/chains/**/*.npy
-
+./widebinaries/chains

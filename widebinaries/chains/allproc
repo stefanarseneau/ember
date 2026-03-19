@@ -1,0 +1,12 @@
+#!/bin/bash
+
+ember summarize thick/ thick.pqt
+python ../scripts/measureages.py thick.pqt ages_thick.pqt
+
+ember summarize thin/ thin.pqt
+python ../scripts/measureages.py thin.pqt ages_thin.pqt
+
+ember summarize mixed/ mixed.pqt
+python ../scripts/measureages.py mixed.pqt ages_mixed.pqt
+
+python ../scripts/stitch . ../data/ages.pqt
