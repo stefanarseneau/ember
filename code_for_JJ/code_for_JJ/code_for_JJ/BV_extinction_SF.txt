@@ -1,0 +1,25 @@
+# Band			R_lambda
+"SDSS u"		4.239
+"SDSS g"		3.302
+"SDSS r"		2.285
+"SDSS i"		1.698
+"SDSS z"		1.263
+"PanSTARRS g"	3.172
+"PanSTARRS r"	2.271
+"PanSTARRS i"	1.682
+"PanSTARRS z"	1.322
+"PanSTARRS y"	1.087
+"SkyMapper u"   4.294 
+"SkyMapper v"   4.026
+"SkyMapper g"   2.986
+"SkyMapper r"   2.288
+"SkyMapper i"   1.588
+"SkyMapper z"   1.206
+"Landolt B"	3.626
+"Landolt V"	2.742
+"2MASS J"	0.720
+"2MASS H"	0.460
+"2MASS K"	0.306
+
+# Taken from  Schlafly, Edward F.; Finkbeiner, Douglas P. 2011 except for SkyMapper which are taken from the SkyMapper website
+# 2MASS values taken from Yuan, Liu, Xiang et al. 2013
