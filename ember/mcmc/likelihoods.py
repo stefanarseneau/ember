@@ -38,22 +38,32 @@ def get_model_flux(theta : np.array, interpolator : interpolator.atmos.WarwickPh
     distance *= pc_to_m # Parsec to meter
     return (radius / distance)**2 * fl
 
-def mcmc_likelihood(theta, fl, e_fl, plx_prior, av_prior, likelihood, ext_vector, units = "fnu", logg_function = None, vg_prior = None):
+def mcmc_likelihood(theta, fl, e_fl, plx_prior, av_prior, likelihood, ext_vector, units = "fnu", logg_function = None, vg_prior = None, fixed_distance = None, fixed_av = None):
     """mcmc likelihood function for parameter inference"""
     # unpack the priors
     if logg_function == None:
         # if we have no logg function, fit on everything
-        teff, radius, distance, av, mass = theta
+        if fixed_distance is not None and fixed_av is not None:
+            teff, radius, mass = theta
+            distance, av = fixed_distance, fixed_av
+            bounds = np.array([[1000, 50000], [0.0035, 0.05], [0.1, 1.4]])
+        else:
+            teff, radius, distance, av, mass = theta
+            bounds = np.array([[1000, 50000], [0.0035, 0.05], [10, 2000], [1e-4, 1], [0.1, 1.4]])
         vg_th = (newton_G * mass * mass_sun) / (speed_light * radius * radius_sun) * 1e-3
         logg = np.log10(100*(newton_G * mass_sun * mass) / (radius * radius_sun)**2)
-        bounds = np.array([[1000, 50000], [0.0035, 0.05], [10, 2000], [1e-4, 1], [0.1, 1.4]])
     else:
         # if we have a logg function, infer the mass and radius from the logg function
-        teff, radius, distance, av = theta
+        if fixed_distance is not None and fixed_av is not None:
+            teff, radius = theta
+            distance, av = fixed_distance, fixed_av
+            bounds = np.array([[1000, 50000], [0.0035, 0.05]])
+        else:
+            teff, radius, distance, av = theta
+            bounds = np.array([[1000, 50000], [0.0035, 0.05], [10, 2000], [1e-4, 1]])
         logg = logg_function(teff, radius)
         mass = (1e-2*np.power(10, logg)) * (radius * radius_sun)**2 / (newton_G * mass_sun)
         vg_th = (newton_G * mass * mass_sun) / (speed_light * radius * radius_sun) * 1e-3
-        bounds = np.array([[1000, 50000], [0.0035, 0.05], [10, 2000], [1e-4, 1]])
     # compute likelihoods
     uniform = likelihood.uniform_prior(theta, bounds)
     if np.isinf(uniform):

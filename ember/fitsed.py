@@ -58,7 +58,8 @@ def run_fitsed(
     parallax_error: str,
     meanav: str,
     gravz: str,
-    gravz_error: str
+    gravz_error: str,
+    fix_distance_av: bool = False,
 ):
     # Expand paths
     rootpath = rootpath.expanduser()
@@ -117,10 +118,11 @@ def run_fitsed(
         parallax = parallax, 
         parallax_error = parallax_error, 
         meanAV = meanav, 
-        gravz = gravz if gravz != '' else None, 
+        gravz = gravz if gravz != '' else None,
         gravz_error = gravz_error if gravz_error != '' else None,
         outfile = outpath,
-        numtasks = numtasks
+        numtasks = numtasks,
+        fix_distance_av = fix_distance_av,
     )
 
 if __name__ == "__main__":

@@ -113,16 +113,12 @@ if __name__ == "__main__":
     dataframe = reduce(lambda x, y: x.merge(y, on='sourceid'), dataframes)
     dataframe = find_best(dataframe)
 
-    print(len(dataframe))
-    dataframe.loc[:,"mass_best"] = _G_RAD_FUNC(dataframe.loc[:, "radius_best"], dataframe.loc[:, "teff_best"])
-    #dataframe = correct_teff(dataframe)
-    print(len(dataframe))
-
     print(dataframe[["teff_thick", "teff_thin", "teff_mixed", "teff_best", "PDA"]])
 
     # Measure ages for each population using the appropriate Bedard model
     age_cols = ["log_age_cool", "log_age_cool_hi", "log_age_cool_lo",
-                "log_age",      "log_age_hi",      "log_age_lo"]
+                "log_age",      "log_age_hi",      "log_age_lo",
+                "mass",         "mass_hi",         "mass_lo"]
     for col in age_cols:
         dataframe[col] = np.nan
 

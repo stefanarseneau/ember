@@ -31,14 +31,15 @@ def read_chainnames(path : str) -> dict:
     names = [Path(file).stem for file in files]
     return np.array(names, dtype=np.int64)
 
-def fit_mcmc(df : pd.DataFrame, 
-        fluxdict : dict, 
-        extinction_vec : np.array, 
-        interp : scipy.interpolate, 
+def fit_mcmc(df : pd.DataFrame,
+        fluxdict : dict,
+        extinction_vec : np.array,
+        interp : scipy.interpolate,
         logg_function : scipy.interpolate,
         use_gravz : bool,
         units : str = "fnu",
         outfile : str = None,
+        fix_distance_av : bool = False,
     ) -> pd.DataFrame:
     """fit using MCMC"""
     _ = util.check_valid(df)
@@ -47,22 +48,29 @@ def fit_mcmc(df : pd.DataFrame,
     chains = {}
     for i, row in tqdm.tqdm(df.iterrows(), total=len(df)):
         print(f"Gaia DR3 {df.gaia_dr3_source_id.values[i].astype(np.int64)}")
-        theta = np.array([12000, 0.012, 100, 0.05]) if logg_function is not None \
-            else np.array([12000, 0.012, 100, 0.05, 0.6])
+        if fix_distance_av:
+            theta = np.array([12000, 0.012]) if logg_function is not None \
+                else np.array([12000, 0.012, 0.6])
+        else:
+            theta = np.array([12000, 0.012, 100, 0.05]) if logg_function is not None \
+                else np.array([12000, 0.012, 100, 0.05, 0.6])
+        av_prior_mean = row.meanAV if row.meanAV != 0 else 0.001
+        av_prior_std  = 0.1*row.meanAV if row.meanAV != 0 else 0.0001
         # construct the loss arguments
         loss_args = {
-                     'fl' : np.asarray(row[fluxcols].values, dtype=float), 
-                     'e_fl' : np.asarray(row[e_fluxcols].values, dtype=float), 
+                     'fl' : np.asarray(row[fluxcols].values, dtype=float),
+                     'e_fl' : np.asarray(row[e_fluxcols].values, dtype=float),
                      'plx_prior' : (row.parallax, row.parallax_error),
-                     'av_prior' : (row.meanAV, 0.1*row.meanAV), 
+                     'av_prior' : (av_prior_mean, av_prior_std),
                      'likelihood' : likelihood,
-                     'ext_vector' : extinction_vec, 
+                     'ext_vector' : extinction_vec,
                      'units' : units,
                      'logg_function' : logg_function,
                     }
-        if (row.meanAV == 0):
-            loss_args['av_prior'] = (0.001, 0.0001)
-    
+        if fix_distance_av:
+            loss_args['fixed_distance'] = 1000.0 / row.parallax
+            loss_args['fixed_av'] = av_prior_mean
+
         if use_gravz:
             loss_args['vg_prior'] = (row.gravz, row.gravz_error)
         chain = interpolator.fit.mcmc_fit(likelihoods.mcmc_likelihood, loss_args, theta)
@@ -178,7 +186,8 @@ def pipeline(
         gravz : str = None,
         gravz_error : str = None,
         outfile : str = None,
-        numtasks : int = None
+        numtasks : int = None,
+        fix_distance_av : bool = False,
     ):
     """run the pipeline and return either a list of chains or the dataframe"""
     assert mode in ['leastsq', 'mcmc'], "Invalid fitting mode!"""
@@ -228,7 +237,7 @@ def pipeline(
     if mode == 'leastsq':
         return fit_leastsq(synphot, fluxdict, extinction_vec, interp, logg_function, units = units, outfile = outfile)
     elif mode == 'mcmc':
-        return fit_mcmc(synphot, fluxdict, extinction_vec, interp, logg_function, units = units, use_gravz = use_gravz, outfile = outfile)
+        return fit_mcmc(synphot, fluxdict, extinction_vec, interp, logg_function, units = units, use_gravz = use_gravz, outfile = outfile, fix_distance_av = fix_distance_av)
     else:
         raise "Invalid input!!"
 
@@ -248,6 +257,7 @@ if __name__ == "__main__":
     parser.add_argument('--meanAV', required = False, type=str, default = 'meanAV', help='Default name for meanAV column')
     parser.add_argument('--gravz', required = False, type=str, default = None, help='Default name for gravz column')
     parser.add_argument('--gravz_error', required = False, type=str, default = None, help='Default name for gravz error column')
+    parser.add_argument('--fix_distance_av', action='store_true', default = False, help='Fix distance and Av at prior mean values rather than sampling them')
     args = parser.parse_args()
     assert args.photosource in ['real', 'xp'], "Invalid photometry source (must be 'real' or 'xp')"
     assert args.mode in ['leastsq', 'mcmc'], "Invalid mode (must be 'leastsq' or 'xp')"
@@ -258,13 +268,13 @@ if __name__ == "__main__":
     # start the pipeline
     if args.photosource == 'real':
         results = pipeline(dataframe, photometry.process_dataframe, logg_function, mode = args.mode,
-                           source_id = args.sourceid, ra = args.ra, dec = args.dec, parallax = args.parallax, 
-                           parallax_error = args.parallax_error, meanAV = args.meanAV, gravz = args.gravz, 
-                           gravz_error = args.gravz_error)
+                           source_id = args.sourceid, ra = args.ra, dec = args.dec, parallax = args.parallax,
+                           parallax_error = args.parallax_error, meanAV = args.meanAV, gravz = args.gravz,
+                           gravz_error = args.gravz_error, fix_distance_av = args.fix_distance_av)
     elif args.photosource == 'xp':
         results = pipeline(dataframe, xpspec.process_dataframe, logg_function, mode = args.mode,
-                           source_id = args.sourceid, ra = args.ra, dec = args.dec, parallax = args.parallax, 
-                           parallax_error = args.parallax_error, meanAV = args.meanAV, gravz = args.gravz, 
-                           gravz_error = args.gravz_error)
+                           source_id = args.sourceid, ra = args.ra, dec = args.dec, parallax = args.parallax,
+                           parallax_error = args.parallax_error, meanAV = args.meanAV, gravz = args.gravz,
+                           gravz_error = args.gravz_error, fix_distance_av = args.fix_distance_av)
         raise "Error! Invalid pipeline arguments!"
     results.to_parquet(args.outpath)

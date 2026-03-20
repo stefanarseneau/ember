@@ -72,7 +72,7 @@ def make_interpolator(datafile: pd.DataFrame, fe_h=None, outcol="log_age"):
         #if len(df) == 0:
         #    raise ValueError(f"No rows for fe_h={fe_h}")
 
-    df = datafile.copy()
+    df = datafile.query("fe_h == 0").copy()
     pts = df[["teff", "radius"]].to_numpy(np.float64)
     vals = df[outcol].to_numpy(np.float64)
 

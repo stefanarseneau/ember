@@ -48,10 +48,11 @@ astrom = pd.concat([comp1, comp2], ignore_index=True).rename(
 )
 del comp1, comp2
 
-# Extract parallax pair data before freeing wb
-pair_ids = wb[['source_id1', 'source_id2',
-               'parallax1', 'parallax_error1',
-               'parallax2', 'parallax_error2']].values
+# Extract source IDs and parallaxes separately to preserve int64 precision
+# (mixing with float columns in a single .values array upcasts IDs to float64,
+#  losing precision for ~10^18 Gaia source IDs and breaking index lookups)
+pair_src = wb[['source_id1', 'source_id2']].values                              # int64
+pair_plx = wb[['parallax1', 'parallax_error1', 'parallax2', 'parallax_error2']].values  # float64
 del wb
 
 # Join astrometry into fluxes, keeping only wide binary members
@@ -62,7 +63,7 @@ print(f'Sources retained (wide binary members): {len(fluxes)}')
 # Compute weighted mean parallax for each pair and write it back
 fluxes = fluxes.set_index('gaia_dr3_source_id', drop=False)
 
-for id1, id2, plx1, e1, plx2, e2 in pair_ids:
+for (id1, id2), (plx1, e1, plx2, e2) in zip(pair_src, pair_plx):
     if not (np.isfinite(plx1) and np.isfinite(plx2) and e1 > 0 and e2 > 0):
         continue
     w1, w2   = 1 / e1**2, 1 / e2**2
@@ -76,6 +77,9 @@ for id1, id2, plx1, e1, plx2, e2 in pair_ids:
 n_updated = fluxes['wb_companion_id'].notna().sum()
 print(f'WDs updated with weighted mean parallax: {n_updated}')
 
-fluxes = fluxes.reset_index(drop=True)
+fluxes = fluxes.reset_index(drop=True).drop(columns=[
+    "Sdss_flux_u", "Sdss_flux_error_u", 
+    "Sdss_flux_g", "Sdss_flux_error_g",
+    "Sdss_flux_r", "Sdss_flux_error_r",])
 fluxes.to_parquet(OUT_PATH)
 print(f'Saved to {OUT_PATH}')

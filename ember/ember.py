@@ -180,6 +180,7 @@ def fitsed(
     meanav: str = typer.Option("meanAV", "--meanav", help="Column name for extinction (A_V)."),
     gravz: str = typer.Option("", "--gravz", help="Column name for gravitational redshift (optional)."),
     gravz_error: str = typer.Option("", "--gravz-error", help="Column name for grav redshift error (optional)."),
+    fix_distance_av: bool = typer.Option(False, "--fix-distance-av", help="Fix distance and Av at prior mean values rather than sampling them."),
 ):
     run_fitsed(
         inpath = inpath,
@@ -201,7 +202,8 @@ def fitsed(
         parallax_error = parallax_error,
         meanav = meanav,
         gravz = gravz,
-        gravz_error = gravz_error
+        gravz_error = gravz_error,
+        fix_distance_av = fix_distance_av,
     )
     typer.echo(f"fit-sed done")
 
