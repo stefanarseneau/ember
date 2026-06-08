@@ -45,11 +45,11 @@ python ms_lifetimes.py
 printf '\nExoplanet host table\n'
 python exoplanet_table.py
 
-printf '\nCool WD velocity distribution\n'
-python coolwd_avr.py
-
-printf '\nCool WD velocity distribution with isotropic rvs\n'
-python coolwd_avr.py --isotropic-rvs
+#printf '\nCool WD velocity distribution\n'
+#python coolwd_avr.py
+#
+#printf '\nCool WD velocity distribution with isotropic rvs\n'
+#python coolwd_avr.py --isotropic-rvs
 
 printf '\nVelocity distribution and AVR age inference\n'
 python lb_velocity_dist.py

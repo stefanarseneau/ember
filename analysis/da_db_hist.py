@@ -8,14 +8,14 @@ import numpy as np
 from scipy import stats
 
 sys.path.insert(0, str(Path(__file__).parent))
-from load_data import OUT_DIR, load_combined, setup_matplotlib
+from load_data import OUT_DIR, dedup_by_survey, load_combined, setup_matplotlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--skippower", action="store_true", help="Skip power analysis")
 args = parser.parse_args()
 
 plt, _ = setup_matplotlib()
-combined, _, _ = load_combined()
+combined, _, _ = dedup_by_survey(load_combined()[0])
 
 feh_da = combined.query("spectype == 'DA'")[["fe_h", "e_fe_h", "Teff_1", "e_Teff_lower", "e_Teff_upper", "survey"]]
 feh_db = combined.query("spectype == 'DB'")[["fe_h", "e_fe_h", "Teff_1", "e_Teff_lower", "e_Teff_upper", "survey"]]
@@ -50,7 +50,7 @@ bc = 0.5 * (bins[:-1] + bins[1:])
 # === Figure 1: comparative histograms ==================================
 fig, ax = plt.subplots()
 ax.hist(feh_da["fe_h"], bins=bins, histtype="step", color="k", linewidth=3, label="DA")
-ax.hist(feh_db["fe_h"], bins=bins, histtype="step", color="dodgerblue", linewidth=3, label="DB")
+ax.hist(feh_db["fe_h"], bins=bins, histtype="step", color="goldenrod", linewidth=3, label="DB")
 ax.text(0.75, 0.95, f"KS $p = {p_value:.3f}$", transform=ax.transAxes, va="top", fontsize=16)
 ax.set_xlabel("[Fe/H]")
 ax.set_ylabel("N")

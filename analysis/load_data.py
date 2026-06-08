@@ -114,6 +114,11 @@ def load_combined():
 		s[f"e_{el}_fe"] = np.sqrt(s[f"e_{el}_h"]**2 + s["e_fe_h"]**2)
 		s = s.drop(columns=[f"{el}_h", f"e_{el}_h"], errors="ignore")
 
+	a["alpha_fe"]   = a["alpha_m"] + a["m_h"] - a["fe_h"]
+	a["e_alpha_fe"] = np.sqrt(a["e_alpha_m"]**2 + a["e_m_h"]**2 + a["e_fe_h"]**2)
+	s["alpha_fe"]   = s["alpha_m_atm"] + s["m_h_atm"] - s["fe_h"]
+	s["e_alpha_fe"] = np.sqrt(s["e_alpha_m_atm"]**2 + s["e_m_h_atm"]**2 + s["e_fe_h"]**2)
+
 	metal_cols = (
 		set(galah_rename.values())
 		| set(apogee_rename.values())
@@ -155,7 +160,27 @@ def load_combined():
 	combined = combined.query("fe_h > -900").copy()
 	combined["total_age_lower_limit"] = combined["tot_age"] - combined["tot_age_error_lower"]
 
-	totalage   = combined.Mass > 0.63
+	totalage   = (combined.Mass > 0.63) & (combined.Teff_1 > 3200)
+	coolingage = ~totalage
+	return combined, totalage, coolingage
+
+
+_SURVEY_PRIORITY = {"APOGEE": 0, "ASTRA": 1, "GALAH": 2, "LAMOST": 3}
+
+def dedup_by_survey(combined):
+	"""Deduplicate on source_id using APOGEE > ASTRA > GALAH > LAMOST for fe_h.
+
+	groupby.first() fills each column from the highest-priority survey that
+	has a non-null value, so element abundances unique to GALAH (ba_fe, li_fe,
+	alpha_fe, etc.) are preserved even when APOGEE wins for fe_h.
+	Returns (combined, totalage, coolingage) with recomputed age masks.
+	"""
+	combined = (combined.assign(_rank=combined["survey"].map(_SURVEY_PRIORITY))
+	                     .sort_values(["source_id", "_rank"])
+	                     .groupby("source_id", sort=False).first()
+	                     .reset_index()
+	                     .drop(columns="_rank"))
+	totalage   = (combined.Mass > 0.63) & (combined.teff_H > 3200)
 	coolingage = ~totalage
 	return combined, totalage, coolingage
 

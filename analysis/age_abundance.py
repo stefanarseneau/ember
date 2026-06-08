@@ -8,14 +8,15 @@ Three groups on the age axis:
 
 import sys
 from pathlib import Path
+import logging
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from load_data import OUT_DIR, age_masks, load_combined, setup_matplotlib
+from load_data import OUT_DIR, age_masks, dedup_by_survey, load_combined, setup_matplotlib
 
 plt, _ = setup_matplotlib()
-combined, totalage, coolingage = load_combined()
+combined, totalage, coolingage = dedup_by_survey(load_combined()[0])
 
 combined["a_li"] = combined["li_fe"] + combined["fe_h"] + 0.96
 combined["e_a_li"] = np.sqrt(combined["e_li_fe"]**2 + combined["e_fe_h"]**2)
@@ -36,7 +37,7 @@ normal, white_ll, blue_ll = age_masks(combined, totalage, coolingage)
 
 # ── Li Abundance ──────────────────────────────────────────────────────────
 # flag_li_fe == 1 in GALAH is a non-detection: the abundance is an upper limit
-li_lowlim  = (combined["survey"] == "GALAH") & (combined["flag_li_fe"].fillna(0) == 1)
+li_lowlim  = combined["flag_li_fe"].fillna(0) == 1
 
 fig, ax = plt.subplots()
 
@@ -70,7 +71,7 @@ for ul in [False, True]:
 ax.plot(
 	np.array([0, 13]),
 	2.437 - 0.224 * np.array([0, 13]),
-	c = "k", label="Marília et al. (2016)"
+	c = "k", label="Carlos et al. (2016)"
 )
 
 ax.set_xlim(0, 13)
@@ -84,57 +85,91 @@ plt.close()
 print(f"Saved {OUT_DIR / 'age_li.pdf'}")
 
 
+mask = (combined["total_age_lower_limit"] > 7.5) & (combined["a_li"] > 2)
+print(combined.loc[mask, ["source_id", "Mass", "e_Mass_lower", "e_Mass_upper",
+							"Teff_1", "e_Teff_lower", "e_Teff_upper", 
+							"total_age_lower_limit", "a_li", "e_a_li"]])
+cluster  = combined.query("ms_source_id == 4083689509602720000").iloc[0]
+pmra     = 4.74047 * cluster.pmra / cluster.wtd_par
+e_pmra   = np.abs(cluster.pmra / cluster.wtd_par) * np.sqrt(
+	(cluster.pmra_error / cluster.pmra)**2 + (cluster.e_wtd_par / cluster.wtd_par)**2
+)
+pmdec    = 4.74047 * cluster.pmdec / cluster.wtd_par
+e_pmdec  = np.abs(cluster.pmdec / cluster.wtd_par) * np.sqrt(
+	(cluster.pmdec_error / cluster.pmdec)**2 + (cluster.e_wtd_par / cluster.wtd_par)**2
+)
+rv, e_rv = 11.41, 0.11
+
+pmra_cluster   = 4.74047 * -0.9733 / 3.2516
+e_pmra_cluster  = np.abs(0.0367 / 0.0038) * np.sqrt((0.0367 / -0.9733)**2 + (0.0038 / 3.2516)**2)
+pmdec_cluster   = 4.74047 * -26.6464 / 3.2516
+e_pmdec_cluster = np.abs(0.0383 / 0.0038) * np.sqrt((0.0383 / -26.6464)**2 + (0.0038 / 3.2516)**2)
+rv_cluster, e_rv_cluster      = 42.18, 0.38
+
+relative_motion = np.sqrt(
+	(pmra - pmra_cluster)**2 + (pmdec - pmdec_cluster)**2 + (rv - rv_cluster)**2 
+)
+e_relative_motion = np.sqrt(
+	e_pmra**2 + e_pmra_cluster**2 + e_pmdec**2 + e_pmdec_cluster**2 + e_rv**2 + e_rv_cluster**2
+)
+print(f"Relative motion of HD 179856 to NGC 6774: {relative_motion:2.2f}+/-{e_relative_motion:2.2f} km/s")
+
 # ── Alpha-enrichment ──────────────────────────────────────────────────────
 A_ENRICHED_CUTOFF = 0.1
 
+combined_reliable_alpha = combined.query("e_alpha_fe < 0.1").copy()
+
 fig, ax = plt.subplots(ncols=3, figsize=(18, 6), sharey=False)
 
-ax[0].errorbar(combined.loc[normal | white_ll, "fe_h"],   combined.loc[normal | white_ll, "alpha_fe"],
-               xerr=combined.loc[normal | white_ll, "e_fe_h"],
-               yerr=combined.loc[normal | white_ll, "e_alpha_fe"], **TOTAL_KW)
-ax[0].errorbar(combined.loc[blue_ll, "fe_h"], combined.loc[blue_ll, "alpha_fe"],
-               xerr=combined.loc[blue_ll, "e_fe_h"],
-               yerr=combined.loc[blue_ll, "e_alpha_fe"], alpha=0.5,
+ax[0].errorbar(combined_reliable_alpha.loc[normal | white_ll, "fe_h"],   combined_reliable_alpha.loc[normal | white_ll, "alpha_fe"],
+               xerr=combined_reliable_alpha.loc[normal | white_ll, "e_fe_h"],
+               yerr=combined_reliable_alpha.loc[normal | white_ll, "e_alpha_fe"], **TOTAL_KW)
+ax[0].errorbar(combined_reliable_alpha.loc[blue_ll, "fe_h"], combined_reliable_alpha.loc[blue_ll, "alpha_fe"],
+               xerr=combined_reliable_alpha.loc[blue_ll, "e_fe_h"],
+               yerr=combined_reliable_alpha.loc[blue_ll, "e_alpha_fe"], alpha=0.5,
                fmt="o", color=LOWLIM_COLOR, markeredgecolor="k", ecolor="k",
                lw=2, capsize=4, markersize=7, zorder=0)
 ax[0].axhline(y=A_ENRICHED_CUTOFF, c="k", ls="--")
 ax[0].set_xlabel("[Fe/H]")
 ax[0].set_ylabel(r"[$\alpha$/Fe]")
 
-ax[1].errorbar(combined.loc[normal, "tot_age"], combined.loc[normal, "alpha_fe"],
-               xerr=combined.loc[normal, ["tot_age_error_lower", "tot_age_error_upper"]].values.T,
-               yerr=combined.loc[normal, "e_alpha_fe"], **TOTAL_KW)
-ax[1].errorbar(combined.loc[white_ll, "total_age_lower_limit"],
-               combined.loc[white_ll, "alpha_fe"],
-               xerr=0.5, yerr=combined.loc[white_ll, "e_alpha_fe"], xlolims=True, **TOTAL_KW)
-ax[1].errorbar(combined.loc[blue_ll, "total_age_lower_limit"],
-               combined.loc[blue_ll, "alpha_fe"],
-               xerr=0.5, yerr=combined.loc[blue_ll, "e_alpha_fe"], **LOWLIM_KW)
+ax[1].errorbar(combined_reliable_alpha.loc[normal, "tot_age"], combined_reliable_alpha.loc[normal, "alpha_fe"],
+               xerr=combined_reliable_alpha.loc[normal, ["tot_age_error_lower", "tot_age_error_upper"]].values.T,
+               yerr=combined_reliable_alpha.loc[normal, "e_alpha_fe"], **TOTAL_KW)
+ax[1].errorbar(combined_reliable_alpha.loc[white_ll, "total_age_lower_limit"],
+               combined_reliable_alpha.loc[white_ll, "alpha_fe"],
+               xerr=0.5, yerr=combined_reliable_alpha.loc[white_ll, "e_alpha_fe"], xlolims=True, **TOTAL_KW)
+ax[1].errorbar(combined_reliable_alpha.loc[blue_ll, "total_age_lower_limit"],
+               combined_reliable_alpha.loc[blue_ll, "alpha_fe"],
+               xerr=0.5, yerr=combined_reliable_alpha.loc[blue_ll, "e_alpha_fe"], **LOWLIM_KW)
 ax[1].axhline(y=A_ENRICHED_CUTOFF, c="k", ls="--")
 ax[1].set_xlabel("Age [Gyr]")
-ax[1].set_xlim(0, 12)
+ax[1].set_xlim(0, 13)
 ax[1].sharey(ax[0])
 
-a_enriched     = combined["alpha_fe"] > A_ENRICHED_CUTOFF
-not_a_enriched = combined["alpha_fe"] <= A_ENRICHED_CUTOFF
+a_enriched     = combined_reliable_alpha["alpha_fe"] > A_ENRICHED_CUTOFF
+not_a_enriched = combined_reliable_alpha["alpha_fe"] <= A_ENRICHED_CUTOFF
 sep_bins = np.logspace(
-    min(np.log10(combined.loc[a_enriched, "sep_AU"].min()),
-        np.log10(combined.loc[not_a_enriched, "sep_AU"].min())),
-    max(np.log10(combined.loc[a_enriched, "sep_AU"].max()),
-        np.log10(combined.loc[not_a_enriched, "sep_AU"].max())),
+    min(np.log10(combined_reliable_alpha.loc[a_enriched, "sep_AU"].min()),
+        np.log10(combined_reliable_alpha.loc[not_a_enriched, "sep_AU"].min())),
+    max(np.log10(combined_reliable_alpha.loc[a_enriched, "sep_AU"].max()),
+        np.log10(combined_reliable_alpha.loc[not_a_enriched, "sep_AU"].max())),
     5,
 )
-ax[2].hist(combined.loc[a_enriched, "sep_AU"],     bins=sep_bins, histtype="step",
+ax[2].hist(combined_reliable_alpha.loc[a_enriched, "sep_AU"],     bins=sep_bins, histtype="step",
            linewidth=4, color="red", label=r"$\alpha$-Enriched", density=True)
-ax[2].hist(combined.loc[not_a_enriched, "sep_AU"], bins=sep_bins, histtype="step",
+ax[2].hist(combined_reliable_alpha.loc[not_a_enriched, "sep_AU"], bins=sep_bins, histtype="step",
            linewidth=4, color="k",   label=r"Not $\alpha$-Enriched", density=True, zorder=0)
 ax[2].set_xlabel("Separation [au]")
 ax[2].set_ylabel("Density")
 ax[2].legend(framealpha=0, loc="upper left", fontsize=14)
 ax[2].set_xscale("log")
 
-print(combined.loc[totalage].query("alpha_fe > 0.40")[
-    ["ms_source_id", "alpha_fe", "e_alpha_fe", "tot_age", "tot_age_error_lower", "tot_age_error_upper"]
+print(f"# alpha enriched: {len(combined_reliable_alpha.loc[a_enriched, "sep_AU"])}")
+print(f"# alpha enriched: {len(combined_reliable_alpha.loc[not_a_enriched, "sep_AU"])}")
+
+print(combined_reliable_alpha.loc[totalage].query("alpha_fe > 0.40")[
+    ["ms_source_id", "alpha_fe", "e_alpha_fe", "c_fe", "e_c_fe", "tot_age", "tot_age_error_lower", "tot_age_error_upper"]
 ])
 fig.tight_layout()
 fig.savefig(OUT_DIR / "age_alpha.pdf")
@@ -170,7 +205,7 @@ ax[1].errorbar(combined.loc[blue_ll, "total_age_lower_limit"],
                xerr=0.5, yerr=combined.loc[blue_ll, "e_c_fe"], **LOWLIM_KW)
 ax[1].axhline(y=C_ENRICHED_CUTOFF, c="k", ls="--")
 ax[1].set_xlabel("Age [Gyr]")
-ax[1].set_xlim(0, 12)
+ax[1].set_xlim(0, 13)
 ax[1].sharey(ax[0])
 
 c_enriched     = combined["c_fe"] > C_ENRICHED_CUTOFF
@@ -225,7 +260,7 @@ ax[1].errorbar(combined.loc[blue_ll, "total_age_lower_limit"],
                xerr=0.5, yerr=combined.loc[blue_ll, "e_ba_fe"], **LOWLIM_KW)
 ax[1].axhline(y=BA_ENRICHED_CUTOFF, c="k", ls="--")
 ax[1].set_xlabel("Age [Gyr]")
-ax[1].set_xlim(0, 12)
+ax[1].set_xlim(0, 13)
 ax[1].sharey(ax[0])
 
 ba_enriched     = combined["ba_fe"] > BA_ENRICHED_CUTOFF
@@ -250,3 +285,40 @@ fig.tight_layout()
 fig.savefig(OUT_DIR / "age_barium.pdf")
 plt.close()
 print(f"Saved {OUT_DIR / 'age_barium.pdf'}")
+
+
+# ── Survey abundance count table (AASTeX) ─────────────────────────────────
+# Use pre-dedup data so counts reflect the true survey origin of each column.
+_raw, _, _ = load_combined()
+_abund_cols = [
+    (r"$[\mathrm{Fe/H}]$",      "fe_h"),
+    (r"$[\mathrm{Li/Fe}]$",     "li_fe"),
+    (r"$[\alpha/\mathrm{Fe}]$", "alpha_fe"),
+    (r"$[\mathrm{C/Fe}]$",      "c_fe"),
+]
+_surveys = ["APOGEE", "ASTRA", "GALAH", "LAMOST"]
+
+print(r"\begin{deluxetable}{lrrrrr}")
+print(r"\tablecaption{Number of sources with each abundance measurement by survey.}")
+print(r"\tablehead{")
+print(r"  \colhead{Abundance} &")
+print(r"  \colhead{APOGEE} & \colhead{ASTRA} & \colhead{GALAH} & \colhead{LAMOST} &")
+print(r"  \colhead{Total}")
+print(r"}")
+print(r"\startdata")
+for label, col in _abund_cols:
+    counts = [_raw.loc[_raw.survey == s, col].notna().sum() for s in _surveys]
+    print(f"  {label:<25} & " + " & ".join(f"{c:>3}" for c in counts) + f" & {sum(counts):>4} \\\\")
+print(r"\hline")
+totals = [(_raw.survey == s).sum() for s in _surveys]
+print(f"  {'Total':<25} & " + " & ".join(f"{t:>3}" for t in totals) + f" & {len(_raw):>4} \\\\")
+print(r"\enddata")
+print(r"\end{deluxetable}")
+
+
+print(f"{len(combined[~np.isnan(combined['fe_h'])])} systems with Fe/H")
+print(f"{len(combined[~np.isnan(combined['alpha_fe'])])} systems with alpha/Fe")
+print(f"{len(combined[~np.isnan(combined['li_fe'])])} systems with Li/Fe ({len(combined[li_lowlim])} low lims)")
+print(f"{len(combined[~np.isnan(combined['c_fe'])])} systems with C/Fe ({len(combined[combined['flag_c_fe'] == 1])} low lims")
+
+

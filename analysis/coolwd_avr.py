@@ -10,7 +10,7 @@ import astropy.units as u
 
 sys.path.insert(0, str(Path(__file__).parent))
 from load_data import (
-    OUT_DIR, load_main_data, load_gaia_ms_rv, setup_matplotlib, avr, bensby_classify
+    OUT_DIR, load_main_data, load_gaia_ms_rv, setup_matplotlib, bensby_classify
 )
 
 parser = argparse.ArgumentParser()
@@ -122,14 +122,19 @@ for pop in ("thin", "thick", "halo", "hercules"):
 	n = (clf_all == pop).sum()
 	print(f"  {pop}: {n}/{len(clf_all)} ({100*n/len(clf_all):.1f}%)")
 
-# == AVR kinematic-age interpolator ============================================
-ages_fine = np.linspace(0.01, 14.0, 100_000)
-su_f, sv_f, sw_f = avr(ages_fine)
-vtot_to_age = interp1d(
-	np.sqrt(su_f**2 + sv_f**2 + sw_f**2), ages_fine,
-	bounds_error=False, fill_value=(ages_fine[0], ages_fine[-1]),
-)
+# Reliable age mask: Mass > 0.63 (total age available) and fractional error < 20%
+def _reliable_ages(df, ok):
+	age = df["tot_age"].values[ok]
+	frac_err = (
+		np.maximum(
+			np.where(np.isfinite(df["tot_age_error_upper"].values[ok]), df["tot_age_error_upper"].values[ok], np.inf),
+			np.where(np.isfinite(df["tot_age_error_lower"].values[ok]), df["tot_age_error_lower"].values[ok], np.inf),
+		) / np.where(age > 0, age, np.nan)
+	)
+	return (df["Mass"].values[ok] > 0.63) & (df["Teff"].values[ok] > 3200) & (frac_err < 0.20) & np.isfinite(age) & (age > 0)
 
+reliable_all  = _reliable_ages(data,   ok_all)
+reliable_cool = _reliable_ages(coolwd, ok_cool)
 
 # == Figure 1: velocity dispersion histograms ==================================
 bins = np.arange(0, 201, 10)
@@ -177,9 +182,7 @@ plt.close()
 print(f"Saved {OUT_DIR / f'coolwd_toomre_classified{rv_suffix}.pdf'}")
 
 
-# ── Figure 3: Toomre diagram — main sample vs cool WDs, with iso-age ellipses ──
-phi = np.linspace(0, np.pi, 300)
-
+# ── Figure 3: Toomre diagram — main sample vs cool WDs ──────────────────────
 fig, ax = plt.subplots(figsize=(8, 7))
 ax.scatter(V_all[ok_all], np.sqrt(U_all[ok_all]**2 + W_all[ok_all]**2),
            s=4, c="k", alpha=0.4, label="Main sample", zorder=1, rasterized=True)
@@ -197,60 +200,45 @@ fig.savefig(OUT_DIR / f"coolwd_toomre{rv_suffix}.pdf")
 plt.close()
 print(f"Saved {OUT_DIR / f'coolwd_toomre{rv_suffix}.pdf'}")
 
-# ── Figure 4: kinematic ages — thin-disk all WDs vs direct ages ─────────────
-thin_all = clf_all == "thin"
-v_total_thin_all = np.sqrt(
-	U_all[ok_all][thin_all]**2 + V_all[ok_all][thin_all]**2 + W_all[ok_all][thin_all]**2
-)
-kin_age_thin_all = vtot_to_age(v_total_thin_all)
-
-direct_age_thin_all = data["tot_age"].values[ok_all][thin_all]
-has_direct_all = np.isfinite(direct_age_thin_all) & (direct_age_thin_all > 0)
-
-n_excl_all = ok_all.sum() - thin_all.sum()
-print(f"Kinematic ages: {thin_all.sum()} thin-disk all WDs ({n_excl_all} thick/halo excluded)")
-print(f"  median kin. age   = {np.median(kin_age_thin_all):.1f} Gyr")
-print(f"  median direct age = {np.nanmedian(direct_age_thin_all[has_direct_all]):.1f} Gyr")
-
+# ── Figures 4 & 5: direct ages by Bensby population ──────────────────────────
 bins_age = np.arange(0, 14.25, 0.5)
+
+print("\nDirect ages by population (full sample):")
+for pop in ("thin", "thick", "halo", "hercules"):
+	ages = data["tot_age"].values[ok_all][(clf_all == pop) & reliable_all]
+	if len(ages):
+		print(f"  {pop}: N={len(ages)}, median={np.median(ages):.1f} Gyr")
+
 fig, ax = plt.subplots(figsize=(8, 5))
-ax.hist(kin_age_thin_all, bins=bins_age, histtype="step", lw=2, color="tab:blue",
-        label=rf"Kinematic ages ($N={thin_all.sum()}$)")
-ax.hist(direct_age_thin_all[has_direct_all], bins=bins_age, histtype="step", lw=2, color="k",
-        label=rf"Direct ages ($N={has_direct_all.sum()}$)")
+for pop, color in pop_colors.items():
+	ages = data["tot_age"].values[ok_all][(clf_all == pop) & reliable_all]
+	if len(ages):
+		ax.hist(ages, bins=bins_age, histtype="step", lw=2, color=color,
+		        label=rf"{pop_labels[pop]} ($N={len(ages)}$)")
 ax.set_xlabel("Age [Gyr]")
 ax.set_ylabel("$N$")
 ax.legend()
 fig.tight_layout()
-fig.savefig(OUT_DIR / f"allwd_kin_ages{rv_suffix}.pdf")
+fig.savefig(OUT_DIR / f"allwd_pop_ages{rv_suffix}.pdf")
 plt.close()
-print(f"Saved {OUT_DIR / f'allwd_kin_ages{rv_suffix}.pdf'}")
+print(f"Saved {OUT_DIR / f'allwd_pop_ages{rv_suffix}.pdf'}")
 
-# ── Figure 5: kinematic ages — thin-disk cool WDs vs direct ages ─────────────
-thin_cool = clf_cool == "thin"
-v_total_thin_cool = np.sqrt(
-	U_cool[ok_cool][thin_cool]**2 + V_cool[ok_cool][thin_cool]**2 + W_cool[ok_cool][thin_cool]**2
-)
-kin_age_thin_cool = vtot_to_age(v_total_thin_cool)
+print("\nDirect ages by population (cool WDs):")
+for pop in ("thin", "thick", "halo", "hercules"):
+	ages = coolwd["tot_age"].values[ok_cool][(clf_cool == pop) & reliable_cool]
+	if len(ages):
+		print(f"  {pop}: N={len(ages)}, median={np.median(ages):.1f} Gyr")
 
-direct_age_thin_cool = coolwd["tot_age"].values[ok_cool][thin_cool]
-has_direct = np.isfinite(direct_age_thin_cool) & (direct_age_thin_cool > 0)
-
-n_excl = ok_cool.sum() - thin_cool.sum()
-print(f"Kinematic ages: {thin_cool.sum()} thin-disk cool WDs ({n_excl} thick/halo excluded)")
-print(f"  median kin. age   = {np.median(kin_age_thin_cool):.1f} Gyr")
-print(f"  median direct age = {np.nanmedian(direct_age_thin_cool[has_direct]):.1f} Gyr")
-
-bins_age = np.arange(0, 14.25, 0.5)
 fig, ax = plt.subplots(figsize=(8, 5))
-ax.hist(kin_age_thin_cool, bins=bins_age, histtype="step", lw=2, color="tab:blue",
-        label=rf"Kinematic ages ($N={thin_cool.sum()}$)")
-ax.hist(direct_age_thin_cool[has_direct], bins=bins_age, histtype="step", lw=2, color="k",
-        label=rf"Direct ages ($N={has_direct.sum()}$)")
+for pop, color in pop_colors.items():
+	ages = coolwd["tot_age"].values[ok_cool][(clf_cool == pop) & reliable_cool]
+	if len(ages):
+		ax.hist(ages, bins=bins_age, histtype="step", lw=2, color=color,
+		        label=rf"{pop_labels[pop]} ($N={len(ages)}$)")
 ax.set_xlabel("Age [Gyr]")
 ax.set_ylabel("$N$")
 ax.legend()
 fig.tight_layout()
-fig.savefig(OUT_DIR / f"coolwd_kin_ages{rv_suffix}.pdf")
+fig.savefig(OUT_DIR / f"coolwd_pop_ages{rv_suffix}.pdf")
 plt.close()
-print(f"Saved {OUT_DIR / f'coolwd_kin_ages{rv_suffix}.pdf'}")
+print(f"Saved {OUT_DIR / f'coolwd_pop_ages{rv_suffix}.pdf'}")

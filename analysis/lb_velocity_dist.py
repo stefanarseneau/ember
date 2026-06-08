@@ -59,7 +59,7 @@ data["age_frac_err"] = (
 )
 mask = (
     (data["age_frac_err"] < 0.20)
-    & (data["Mass"] > 0.63)
+    & (data["Mass"] > 0.63) & (data["Teff"] > 3200)
     & (data["spectype"] != "0.0")
     & data["tot_age"].notna() & (data["tot_age"] > 0)
     & data["wtd_par"].notna() & (data["wtd_par"] > 0)
