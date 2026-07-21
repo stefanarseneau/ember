@@ -18,6 +18,7 @@ COMMANDS = {
     "exoplanet-table":  "catalog.analysis.exoplanet_table",
     "ifmr-comparison":  "catalog.analysis.ifmr_comparison",
     "mass-teff":        "catalog.analysis.mass_teff",
+    "ms-evol-cmd":      "catalog.analysis.ms_evol_cmd",
     "ms-lifetimes":     "catalog.analysis.ms_lifetimes",
     "sample-summary":   "catalog.analysis.sample_summary",
     "uncertainty":      "catalog.analysis.uncertainty_improvement",

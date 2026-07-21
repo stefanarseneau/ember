@@ -17,6 +17,26 @@ BP_RP_A = 0.0059898
 BP_RP_B = 8.817481e-12
 BP_RP_EXP = 7.618399
 
+# MS-companion MS/subgiant/giant classification (catalog.wdms.evolutionary_state).
+# Two disjoint, fully hardcoded tests in (ms_bp_rp, M_G), split at
+# GIANT_CMD_EVOLVED_MIN_BP_RP — no isochrones, no fitting, deliberately
+# arbitrary:
+#
+#   subgiant — bp_rp < GIANT_CMD_EVOLVED_MIN_BP_RP and above a straight line
+#     through (0,0) and (1, GIANT_CMD_SG_LINE_AT_1), i.e.
+#     M_G < GIANT_CMD_SG_LINE_AT_1 * bp_rp.
+#
+#   giant — bp_rp >= GIANT_CMD_EVOLVED_MIN_BP_RP and
+#     M_G < GIANT_CMD_GIANT_ABS_MAG_MAX.
+GIANT_CMD_SG_LINE_AT_1 = 4.0
+GIANT_CMD_EVOLVED_MIN_BP_RP = 1.0
+GIANT_CMD_GIANT_ABS_MAG_MAX = 4.0
+
+# Isochrone grid — plotting context only (catalog.analysis.ms_evol_cmd), not
+# used by the classification itself.
+GIANT_CMD_AGE_GRID_GYR = [0.3, 0.5, 1, 2, 3, 5, 7, 10, 13.5]
+MIST_EVOL_GRID_CACHE = DATA_DIR / "mist_evol_grid.pqt"
+
 STYLE_FILE       = REPO_ROOT / "stefan.mplstyle"
 WDWD_STITCH_DIR  = DATA_DIR / "wdwd_stitch_input"
 

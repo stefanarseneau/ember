@@ -11,7 +11,7 @@ Requires:
     defaults to ~/observational/catalogs/XP-spectra/vincent2024.pqt)
 
 Usage:
-    python -m catalog.stitch [--inpath data/] [--outpath data/ages.pqt]
+    python -m catalog.wdwd.stitch [--inpath data/] [--outpath data/ages.pqt]
 """
 
 import os
@@ -22,8 +22,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .config import DATA_DIR
-from .corrections import correct_cool_wd_mass
+from ..config import DATA_DIR
+from ..corrections import correct_cool_wd_mass
 
 _COLUMNS = ["teff", "std_tt", "radius", "std_rr", "cov_rt",
             "av", "std_av", "dist", "std_dist", "nsamps"]

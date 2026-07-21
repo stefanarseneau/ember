@@ -1,8 +1,8 @@
 """Dispatcher: python -m catalog.build [--wdms | --wdwd]
 
-Delegates to the appropriate pipeline module:
-  --wdms  (default)  catalog.build_wdms  — WD+MS combined/metallicity catalogs
-  --wdwd             catalog.build_wdwd  — WD+WD stitch → El-Badry → pairs
+Delegates to the appropriate pipeline package:
+  --wdms  (default)  catalog.wdms  — WD+MS combined/metallicity catalogs
+  --wdwd             catalog.wdwd  — WD+WD stitch → El-Badry → pairs
 """
 
 import sys
@@ -21,10 +21,10 @@ def main():
                   check_correct_ages=args.check_correct_ages)
 
     if args.wdwd:
-        from .build_wdwd import main as _main
+        from .wdwd.build import main as _main
         _main(**{k: v for k, v in kwargs.items() if k == "correct_ages"})
     else:
-        from .build_wdms import main as _main
+        from .wdms.build import main as _main
         _main(**kwargs)
 
 

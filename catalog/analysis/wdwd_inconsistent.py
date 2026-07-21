@@ -8,8 +8,8 @@ Points are coloured by 1σ consistency: blue = consistent (|Δt| ≤ σ_Δt),
 red = inconsistent.
 
 Requires wdwd_pairs.pqt built by:
-    python -m catalog.build_wdwd --elbadry   (one-time download)
-    python -m catalog.build_wdwd --pairs
+    python -m catalog.wdwd.build --elbadry   (one-time download)
+    python -m catalog.wdwd.build --pairs
 """
 
 import numpy as np
@@ -75,8 +75,8 @@ def main():
     if not pairs_path.exists():
         raise FileNotFoundError(
             f"{pairs_path} not found — run:\n"
-            "  python -m catalog.build_wdwd --elbadry\n"
-            "  python -m catalog.build_wdwd --pairs"
+            "  python -m catalog.wdwd.build --elbadry\n"
+            "  python -m catalog.wdwd.build --pairs"
         )
 
     pairs = pd.read_parquet(pairs_path)

@@ -11,10 +11,10 @@ Full pipeline (run in order):
                 Applies photometry bitmask per component, enforces M1 >= M2.
 
 Usage:
-    python -m catalog.build_wdwd            # full pipeline
-    python -m catalog.build_wdwd --stitch   # stitch step only
-    python -m catalog.build_wdwd --elbadry  # El-Badry download/cache only
-    python -m catalog.build_wdwd --pairs    # pair-building step only
+    python -m catalog.wdwd.build            # full pipeline
+    python -m catalog.wdwd.build --stitch   # stitch step only
+    python -m catalog.wdwd.build --elbadry  # El-Badry download/cache only
+    python -m catalog.wdwd.build --pairs    # pair-building step only
 """
 
 import gzip
@@ -26,9 +26,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .config import DATA_DIR, WDWD_STITCH_DIR, ELBADRY_URL, ELBADRY_CACHE
+from ..config import DATA_DIR, WDWD_STITCH_DIR, ELBADRY_URL, ELBADRY_CACHE
 from .stitch import main as _stitch_main
-from .bitmasks import _make_photometry_bitmask
+from ..bitmasks import _make_photometry_bitmask
 
 
 _TYLER_WDWD = DATA_DIR / "tyler/tyler_wdwd.csv"

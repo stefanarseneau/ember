@@ -19,9 +19,10 @@ unique to APOGEE (ti3_fe, …) are preserved even when GALAH wins for fe_h.
 import numpy as np
 import pandas as pd
 
-from .config import DATA_DIR, SURVEY_PRIORITY, FLAG_THRESHOLD, BP_RP_A, BP_RP_B, BP_RP_EXP
-from .bitmasks import _make_photometry_bitmask
-from .corrections import correct_cool_wd_mass
+from ..config import DATA_DIR, SURVEY_PRIORITY, FLAG_THRESHOLD, BP_RP_A, BP_RP_B, BP_RP_EXP
+from ..bitmasks import _make_photometry_bitmask
+from ..corrections import correct_cool_wd_mass
+from . import evolutionary_state
 
 
 # ── Quality cuts ───────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ def _run_ages(df: pd.DataFrame, teff_col: str, mass_col: str, label: str,
               out_cols: list) -> pd.DataFrame:
     """Run parallel_forloop for cool WDs and store results in out_cols."""
     from sedtool.measureages import parallel_forloop
-    from .stitch import stype_to_pop_type
+    from ..wdwd.stitch import stype_to_pop_type
 
     df = df.copy()
     df["_pop_type"] = stype_to_pop_type(df["spectype"], df[teff_col])
@@ -122,6 +123,8 @@ def _process_galah() -> pd.DataFrame:
         "fe_h": "fe_h", "e_fe_h": "e_fe_h", "flag_fe_h": "flag_fe_h",
         "alpha_fe": "alpha_fe", "e_alpha_fe": "e_alpha_fe",
         "flag_alpha_fe": "flag_alpha_fe",
+        "logg_2": "ms_logg", "e_logg": "e_ms_logg",
+        "teff_2": "ms_teff", "e_teff": "e_ms_teff",
     }
     for el in _elems:
         lo = el.lower()
@@ -149,6 +152,8 @@ def _process_apogee() -> pd.DataFrame:
         "ALPHA_M": "alpha_m", "ALPHA_M_ERR": "e_alpha_m",
         "TIII_FE": "ti3_fe", "TIII_FE_ERR": "e_ti3_fe",
         "TIII_FE_FLAG": "flag_ti3_fe", "TIII_FE_SPEC": "ti3_fe_spec",
+        "LOGG_2": "ms_logg", "LOGG_ERR": "e_ms_logg",
+        "TEFF_2": "ms_teff", "TEFF_ERR": "e_ms_teff",
     }
     for el in _fe_elems:
         lo = el.lower()
@@ -180,6 +185,8 @@ def _process_astra() -> pd.DataFrame:
         "c_12_13": "c_12_13", "e_c_12_13": "e_c_12_13",
         "c_12_13_flags": "flag_c_12_13",
         "fe_h_atmo": "fe_h_atmo",
+        "logg_2": "ms_logg", "e_logg": "e_ms_logg",
+        "teff_2": "ms_teff", "e_teff": "e_ms_teff",
     }
     for el in _h_elems:
         rename[f"{el}_h_flags"] = f"flag_{el}_fe"
@@ -211,7 +218,7 @@ def _process_lamost() -> pd.DataFrame:
     cache_path = DATA_DIR / "merge/wdms_lamost_efeh.csv"
 
     lamost = pd.read_csv(DATA_DIR / "merge/wdms_lamost.csv")
-    lamost = lamost.rename(columns={"[Fe/H]": "fe_h"})
+    lamost = lamost.rename(columns={"[Fe/H]": "fe_h", "logg": "ms_logg", "Teff.1": "ms_teff"})
     lamost = lamost[lamost.Teff > 0]
     lamost = lamost.sort_values("snrg", ascending=False).drop_duplicates(subset=["source_id"])
     lamost = lamost.query("fe_h > -900")
@@ -239,7 +246,7 @@ def _process_lamost() -> pd.DataFrame:
             print(f"Warning: LAMOST e_fe_h query failed ({e}); using NaN")
             lamost["e_fe_h"] = np.nan
 
-    return lamost[["source_id", "fe_h", "e_fe_h"]].copy()
+    return lamost[["source_id", "fe_h", "e_fe_h", "ms_logg", "ms_teff"]].copy()
 
 
 # ── Flag thresholding ──────────────────────────────────────────────────────
@@ -294,6 +301,9 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
         print(f"  {name:6s}: {len(df)} sources")
 
     # ── 3. Build metallicity.pqt (long form, provenance) ─────────────────
+    # Note: this also gates ms_logg on fe_h passing the sentinel check below —
+    # acceptable since each survey's logg and [Fe/H] come from the same joint
+    # stellar-parameter fit, so failures are correlated.
     metallicity = pd.concat(survey_frames.values(), ignore_index=True)
     metallicity = _apply_flag_thresholds(metallicity)
     metallicity = metallicity.query("fe_h > -900").copy()
@@ -332,6 +342,10 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
     age_class[combined["Mass"] <= 0.6] = 2
     age_class[totalage & ~age_lowlim]  = 0
     combined["age_class"] = age_class
+
+    # ── 5.7 MS-companion evolutionary state (subgiant/giant) ──────────────
+    print()
+    combined["ms_evol_class"] = evolutionary_state.classify(combined)
 
     out_combined = DATA_DIR / "combined.pqt"
     combined.to_parquet(out_combined, index=False)
