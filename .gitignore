@@ -1,5 +1,17 @@
 *.egg-info
-./omnidwarf
-./widebinaries/data/*
-./widebinaries/chains/**/*.npy
-./widebinaries/chains
+__pycache__/
+*.pyc
+.*.swp
+.*.swo
+*.crc
+__MACOSX/
+.DS_Store
+
+# regenerable pipeline caches / checkpoints
+data/elbadry_wdpairs.pqt
+data/*_ckpt.parquet
+data/*_ckpt.pqt
+data/combined.csv
+
+# third-party reference grids, too large for git (~1.9G, downloaded from MIST)
+tyler_code/init_mass_to_mslife/mist_feh_*/
