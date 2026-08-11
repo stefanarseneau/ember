@@ -132,14 +132,14 @@ def main():
     if not args.skipline:
         ax.fill_between(np.log10(ifmr.teff_max), ifmr.M_final, ylims[0],
                         hatch="///", facecolor="none", edgecolor="0.6", linewidth=0.4, zorder=1)
-        ax.fill_between(t_fit, p(t_fit), ylims[0],
-                        hatch="///", facecolor="none", edgecolor="0.6", linewidth=0.4, zorder=1)
-        ax.plot(t_fit, p(t_fit), c="k", lw=2, zorder=7)
+        #ax.fill_between(t_fit, p(t_fit), ylims[0],
+        #                hatch="///", facecolor="none", edgecolor="0.6", linewidth=0.4, zorder=1)
+        #ax.plot(t_fit, p(t_fit), c="k", lw=2, zorder=7)
         ax.plot(np.log10(ifmr.teff_max), ifmr.M_final, c="k", lw=2, zorder=7)
-        ax.scatter([max_t], [ifmr.M_final.min()], s=40, c="red", edgecolor="k", zorder=100)
-        ax.text(0.02, 0.07, "Forbidden By Single Star Evolution",
-                ha="left", va="top", fontsize=18, transform=ax.transAxes,
-                bbox=dict(facecolor="white", edgecolor="none", alpha=0.8))
+        #ax.scatter([max_t], [ifmr.M_final.min()], s=40, c="red", edgecolor="k", zorder=100)
+        #ax.text(0.02, 0.07, "Forbidden By Single Star Evolution",
+        #        ha="left", va="top", fontsize=18, transform=ax.transAxes,
+        #        bbox=dict(facecolor="white", edgecolor="none", alpha=0.8))
         ax.set_ylim(ylims)
 
     ticks_kK = np.array([50, 40, 30, 20, 10, 7, 5, 4])

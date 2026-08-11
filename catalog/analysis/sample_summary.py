@@ -15,9 +15,9 @@ def main():
 
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 10))
 
-    ax[0, 0].scatter(combined.bp_rp, combined.phot_g_mean_mag + 5 * np.log10(combined.wtd_par) + 5,
+    ax[0, 0].scatter(combined.bp_rp, combined.phot_g_mean_mag + 5 * np.log10(combined.wtd_par) - 10,
                      s=1, c=wd_color, rasterized=True)
-    ax[0, 0].scatter(combined.ms_bp_rp, combined.ms_phot_g_mean_mag + 5 * np.log10(combined.wtd_par) + 5,
+    ax[0, 0].scatter(combined.ms_bp_rp, combined.ms_phot_g_mean_mag + 5 * np.log10(combined.wtd_par) - 10,
                      s=1, c=ms_color, rasterized=True)
     ax[0, 0].set_xlabel("BP-RP [mag]")
     ax[0, 0].set_ylabel("$M_G$ [mag]")

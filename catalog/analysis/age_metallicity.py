@@ -28,7 +28,8 @@ def main():
     combined, normal, white_ll, blue_ll = load_catalog()
     totalage = normal | white_ll
 
-    fig, ax = plt.subplots(ncols=3, figsize=(16, 6), sharey=True)
+    fig, ax = plt.subplots(ncols=4, figsize=(20, 6), sharey=True,
+                            gridspec_kw={"width_ratios": [1, 1, 1, 0.3]})
 
     # GALAH
     sel_g = combined.query("survey == 'GALAH'").loc[totalage]
@@ -47,7 +48,7 @@ def main():
                bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0))
     ax[0].set_ylim(0, 13)
     ax[0].set_xlabel("[Fe/H]")
-    ax[0].set_ylabel("Age [Gyr]")
+    ax[0].set_ylabel("WD Age [Gyr]")
     ax[0].set_title("GALAH", fontsize=24)
     ax[0].set_xlim(-1.0, 0.8)
 
@@ -85,6 +86,14 @@ def main():
                bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0))
     ax[2].set_xlabel("[Fe/H]")
     ax[2].set_title("LAMOST", fontsize=24)
+
+    # Age histogram (all three samples combined)
+    all_ages = pd.concat([sel_g["tot_age"], sel_a["tot_age"], sel_l["tot_age"]])
+    age_bins = np.linspace(0, 13, 27)
+    ax[3].hist(all_ages, bins=age_bins, orientation="horizontal",
+               histtype="step", color="k", linewidth=3)
+    ax[3].set_xlabel("N")
+    ax[3].set_title("All Ages", fontsize=24)
 
     slopes = np.array([m_g, m_a])
     sigmas = np.array([sm_g, sm_a])

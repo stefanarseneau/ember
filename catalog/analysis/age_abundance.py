@@ -34,51 +34,99 @@ def main():
 	# flag_li_fe == 1 in GALAH is a non-detection: the abundance is an upper limit
 	li_lowlim = combined["flag_li_fe"].fillna(0) == 1
 
-	fig, ax = plt.subplots()
-
-	for ul in [False, True]:
-		extra = {"uplims": True} if ul else {}
-		sel = normal & (li_lowlim == ul)
-		ax.errorbar(
-			combined.loc[sel, "tot_age"],
-			combined.loc[sel, "a_li"],
-			xerr=combined.loc[sel, ["tot_age_error_lower", "tot_age_error_upper"]].values.T,
-			yerr=combined.loc[sel, "e_a_li"],
-			**extra, **TOTAL_KW,
-		)
-		sel = white_ll & (li_lowlim == ul)
-		ax.errorbar(
-			combined.loc[sel, "total_age_lower_limit"],
-			combined.loc[sel, "a_li"],
-			xerr=0.5,
-			yerr=combined.loc[sel, "e_a_li"],
-			xlolims=True, **extra, **TOTAL_KW,
-		)
-		sel = blue_ll & (li_lowlim == ul)
-		ax.errorbar(
-			combined.loc[sel, "total_age_lower_limit"],
-			combined.loc[sel, "a_li"],
-			xerr=0.5,
-			yerr=combined.loc[sel, "e_a_li"],
-			**extra, **LOWLIM_KW,
-		)
-
-	ax.plot(
-		np.array([0, 13]),
-		2.437 - 0.224 * np.array([0, 13]),
-		c="k", label="Carlos et al. (2016)"
+	# Solar-analog box (cf. Carlos et al. 2016 solar-twin selection, loosened):
+	# Teff = 5777 +/- 500 K, logg = 4.44 +/- 0.3 dex, [Fe/H] = 0.0 +/- 0.3 dex
+	solar_analog = (
+		combined["ms_teff"].between(5777 - 750, 5777 + 750)
+		& combined["ms_logg"].between(4.44 - 0.5, 4.44 + 0.5)
+		& combined["a_li"].notna()
 	)
+	print(f"{sum(solar_analog)} solar analog stars")
 
-	ax.set_xlim(0, 13)
-	ax.set_ylim(0, 3)
-	ax.set_xlabel("Age [Gyr]")
-	ax.set_ylabel("A(Li)")
-	ax.legend(framealpha=0)
+	fig, axes = plt.subplots(ncols=2, figsize=(12, 5), sharey=True)
 
+	for panel_ax, panel_sel in zip(axes, [combined.index.notna(), solar_analog]):
+		for ul in [False, True]:
+			extra = {"uplims": True} if ul else {}
+			sel = normal & panel_sel & (li_lowlim == ul)
+			panel_ax.errorbar(
+				combined.loc[sel, "tot_age"],
+				combined.loc[sel, "a_li"],
+				xerr=combined.loc[sel, ["tot_age_error_lower", "tot_age_error_upper"]].values.T,
+				yerr=combined.loc[sel, "e_a_li"],
+				**extra, **TOTAL_KW,
+			)
+			sel = white_ll & panel_sel & (li_lowlim == ul)
+			panel_ax.errorbar(
+				combined.loc[sel, "total_age_lower_limit"],
+				combined.loc[sel, "a_li"],
+				xerr=0.5,
+				yerr=combined.loc[sel, "e_a_li"],
+				xlolims=True, **extra, **TOTAL_KW,
+			)
+			sel = blue_ll & panel_sel & (li_lowlim == ul)
+			panel_ax.errorbar(
+				combined.loc[sel, "total_age_lower_limit"],
+				combined.loc[sel, "a_li"],
+				xerr=0.5,
+				yerr=combined.loc[sel, "e_a_li"],
+				**extra, **LOWLIM_KW,
+			)
+
+		panel_ax.plot(
+			np.array([0, 13]),
+			2.437 - 0.224 * np.array([0, 13]),
+			c="k", label="Carlos et al. (2016)"
+		)
+		panel_ax.set_xlim(0, 7)
+		panel_ax.set_xlabel("WD Age [Gyr]")
+
+	axes[0].set_title("All Stars", fontsize=18)
+	axes[1].set_title("Solar Analogs", fontsize=18)
+	axes[0].set_ylim(0, 3)
+	axes[0].set_ylabel("A(Li)")
+	axes[0].legend(framealpha=0)
+
+	fig.tight_layout()
 	out = FIGURES_DIR / "age_li.pdf"
 	fig.savefig(out)
 	plt.close()
 	print(f"Saved {out}")
+
+	# ── One-sided residual test for lower-limit ages ──────────────────────────
+	# A(Li) declines monotonically with age, so a lower limit on age gives an
+	# upper limit on the relation's prediction (evaluated at the limit itself,
+	# the youngest age still allowed). Only stars whose observed A(Li) sits
+	# above that best-case prediction are in genuine tension with the relation
+	# -- the true (larger) age would only push the prediction lower.
+	lowlim = (white_ll | blue_ll) & combined["a_li"].notna() & combined["total_age_lower_limit"].notna()
+	pred_ceiling = 2.437 - 0.224 * combined["total_age_lower_limit"]
+	tension_sigma = (combined["a_li"] - pred_ceiling) / combined["e_a_li"]
+	combined["li_age_tension_sigma"] = tension_sigma.where(lowlim)
+
+	in_tension = lowlim & (tension_sigma > 3)
+	print(f"{lowlim.sum()} lower-limit systems with Li/Fe")
+	print(f"{in_tension.sum()} in >3sigma tension with Carlos et al. (2016), "
+		  f"even under their most permissive (limit) age")
+	print(f"  of which {(in_tension & solar_analog).sum()} are solar analogs "
+		  f"(out of {(lowlim & solar_analog).sum()} solar-analog lower limits)")
+
+	# Two-sided residual test for point-estimate (normal) ages -- no censoring,
+	# so the ordinary signed residual against the relation applies directly.
+	has_age = normal & combined["a_li"].notna() & combined["tot_age"].notna()
+	pred_normal = 2.437 - 0.224 * combined["tot_age"]
+	sigma_normal = (combined["a_li"] - pred_normal) / combined["e_a_li"]
+	combined.loc[has_age, "li_age_tension_sigma"] = sigma_normal[has_age]
+
+	in_tension_normal = has_age & (sigma_normal.abs() > 3)
+	print(f"{has_age.sum()} normal (point-estimate age) systems with Li/Fe")
+	print(f"{in_tension_normal.sum()} more than 3sigma from Carlos et al. (2016)")
+	print(f"  of which {(in_tension_normal & solar_analog).sum()} are solar analogs "
+		  f"(out of {(has_age & solar_analog).sum()} solar-analog point-estimate ages)")
+
+	total_tension = in_tension | in_tension_normal
+	print(f"{total_tension.sum()} systems total more than 3sigma from the relation "
+		  f"({(total_tension & solar_analog).sum()} solar analogs)")
 
 	mask = (combined["total_age_lower_limit"] > 7.5) & (combined["a_li"] > 2)
 	print(combined.loc[mask, ["source_id", "Mass", "e_Mass_lower", "e_Mass_upper",

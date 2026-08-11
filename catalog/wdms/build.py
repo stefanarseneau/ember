@@ -28,7 +28,7 @@ from . import evolutionary_state
 # ── Quality cuts ───────────────────────────────────────────────────────────
 
 def _apply_wd_cuts(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.query("Teff > 0 & ruwe < 1.2 & R_chance_align < 0.1 & Mass > 0.21")
+    df = df.query("Teff > 3000 & ruwe < 1.2 & R_chance_align < 0.1 & Mass > 0.21")
     excess = 3 * (BP_RP_A + BP_RP_B * df["phot_g_mean_mag"] ** BP_RP_EXP)
     return df[df["phot_bp_rp_excess_factor"] > excess]
 
@@ -343,13 +343,21 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
     age_class[totalage & ~age_lowlim]  = 0
     combined["age_class"] = age_class
 
+    # Below 0.6 Msun the IFMR-derived main-sequence lifetime is too uncertain
+    # to trust (Heintz+2022, Heintz+2024), so total_age_lower_limit falls back
+    # to the cooling age alone rather than tot_age - tot_age_error_lower.
+    blue_ll = combined["age_class"] == 2
+    combined.loc[blue_ll, "total_age_lower_limit"] = combined.loc[blue_ll, "cool_age"]
+
     # ── 5.7 MS-companion evolutionary state (subgiant/giant) ──────────────
     print()
     combined["ms_evol_class"] = evolutionary_state.classify(combined)
 
-    out_combined = DATA_DIR / "combined.pqt"
-    combined.to_parquet(out_combined, index=False)
-    print(f"Saved {out_combined}  ({len(combined)} rows, "
+    out_combined_pqt = DATA_DIR / "combined.pqt"
+    out_combined_csv = DATA_DIR / "combined.csv"
+    combined.to_parquet(out_combined_pqt, index=False)
+    combined.to_csv(out_combined_csv, index=False)
+    print(f"Saved {out_combined_pqt}  ({len(combined)} rows, "
           f"{combined['fe_h'].notna().sum()} with metallicity)")
 
     # ── 6. Summary ────────────────────────────────────────────────────────
@@ -361,13 +369,16 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
         ("[C/Fe]",  "c_fe"),
     ]
     surveys = ["APOGEE", "ASTRA", "GALAH", "LAMOST"]
-    header  = f"  {'':12}" + "".join(f"{s:>8}" for s in surveys) + f"{'Total':>8}"
+    header  = (f"  {'':12}" + "".join(f"{s:>8}" for s in surveys)
+               + f"{'Total':>8}{'UppLim':>8}")
     print(header)
     for label, col in abund_cols:
         counts = [metallicity.loc[metallicity.survey == s, col].notna().sum()
                   for s in surveys]
+        flag_col = f"flag_{col}"
+        upplim = (metallicity[flag_col] == 1).sum() if flag_col in metallicity else 0
         print(f"  {label:12}" + "".join(f"{c:>8}" for c in counts)
-              + f"{sum(counts):>8}")
+              + f"{sum(counts):>8}{upplim:>8}")
 
 
 if __name__ == "__main__":

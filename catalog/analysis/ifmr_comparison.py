@@ -42,10 +42,13 @@ def main():
     ax.plot(wd_masses[idx], m_in_values[idx], c="cornflowerblue", lw=5, ls="--", label="Bauer et al. (2026) IFMR")
     ax.plot(ifmr.M_final, ifmr.M_initial, c="goldenrod", lw=5, label="Fields et al. (2016) IFMR", zorder=0)
     ax.set_xlabel(r"White Dwarf Mass [$M_\odot$]")
-    ax.set_ylabel(r"Progenitor Mass [$M_\odot$]")
+    ax.set_ylabel(r"ZAMS Progenitor Mass [$M_\odot$]")
     ax.legend(framealpha=0)
 
-    interp_diff = np.mean(np.interp(ifmr.M_initial, m_in_values, wd_masses) - ifmr.M_final)
+    m_in_idx = np.argsort(m_in_values)
+    interp_diff = np.mean(
+        np.interp(ifmr.M_initial, m_in_values[m_in_idx], wd_masses[m_in_idx]) - ifmr.M_final
+    )
     print(f"Mean IFMR M_WD offset (Bauer - Fields): {interp_diff:.4f} M_sun")
 
     out = FIGURES_DIR / "ifmr_comparison.pdf"
