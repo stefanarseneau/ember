@@ -31,7 +31,7 @@ def load_catalog():
 	  1 = white_ll — totalage with large upper error, or 0.6 < M ≤ 0.63
 	  2 = blue_ll  — M ≤ 0.6
 	"""
-	combined = pd.read_parquet(DATA_DIR / "combined.pqt")
+	combined = pd.read_parquet(DATA_DIR / "catalogs/combined.pqt")
 	normal   = combined["age_class"] == 0
 	white_ll = combined["age_class"] == 1
 	blue_ll  = combined["age_class"] == 2
@@ -40,4 +40,4 @@ def load_catalog():
 
 def load_metallicity():
 	"""Long-form parquet: one row per (source, survey). Use for provenance/count tables."""
-	return pd.read_parquet(DATA_DIR / "metallicity.pqt")
+	return pd.read_parquet(DATA_DIR / "catalogs/metallicity.pqt")

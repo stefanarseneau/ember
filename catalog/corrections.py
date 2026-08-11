@@ -43,7 +43,7 @@ def correct_cool_wd_mass(mass, teff):
     polynomial_delta_m = np.poly1d(fit)
     delta_m = polynomial_delta_m(t)
 
-    out_coefficients = DATA_DIR / "correction_coefficients.npy"
+    out_coefficients = DATA_DIR / "build/correction_coefficients.npy"
     np.save(out_coefficients, np.append([m_med], fit))
 
     terms = []

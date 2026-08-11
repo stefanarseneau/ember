@@ -32,7 +32,7 @@ def main():
                     m_in_values.append(float(match.group(1)))
                     break
 
-    ifmr = pd.read_csv(DATA_DIR / "MESA_IFMR/ifmr_data.csv")
+    ifmr = pd.read_csv(DATA_DIR / "raw/mesa_ifmr/ifmr_data.csv")
 
     wd_masses   = np.array(wd_masses)
     m_in_values = np.array(m_in_values)

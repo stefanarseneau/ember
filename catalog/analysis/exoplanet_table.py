@@ -13,7 +13,7 @@ def main():
     setup_matplotlib()
     combined, *_ = load_catalog()
 
-    stellarhosts_raw = pd.read_csv(DATA_DIR / "merge_data/stellarhosts.csv", comment="#")
+    stellarhosts_raw = pd.read_csv(DATA_DIR / "external/stellarhosts.csv", comment="#")
     stellarhosts_raw["gaia_dr3_id"] = (
         stellarhosts_raw["gaia_dr3_id"].str.extract(r"(\d+)$").astype("Int64")
     )

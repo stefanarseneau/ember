@@ -59,7 +59,7 @@ def _run_ages(df: pd.DataFrame, teff_col: str, mass_col: str, label: str,
             continue
         print(f"{label}: measuring ages for {mask.sum()} cool {pop} WDs…")
         subset = df[mask].copy()
-        ckpt = DATA_DIR / f"combined_{label}_{pop}_ckpt.parquet"
+        ckpt = DATA_DIR / f"build/combined_{label}_{pop}_ckpt.parquet"
         subset = parallel_forloop(
             subset, ckpt, pop_type=pop,
             user_teff=teff_col,  user_e_teff="_e_Teff",
@@ -133,7 +133,7 @@ def _process_galah() -> pd.DataFrame:
         rename[f"flag_{el}_fe"] = f"flag_{lo}_fe"
         rename[f"nr_{el}_fe"]   = f"nr_{lo}_fe"
 
-    df = pd.read_csv(DATA_DIR / "tyler/tyler_wdms_GALAH.csv").query("Teff_1 > 3200")
+    df = pd.read_csv(DATA_DIR / "raw/tyler/tyler_wdms_GALAH.csv").query("Teff_1 > 3200")
     df = df.rename(columns=rename)
     metal_cols = [c for c in rename.values() if c in df.columns]
     return df[["source_id"] + metal_cols].copy()
@@ -162,7 +162,7 @@ def _process_apogee() -> pd.DataFrame:
         rename[f"{el}_FE_FLAG"] = f"flag_{lo}_fe"
         rename[f"{el}_FE_SPEC"] = f"{lo}_fe_spec"
 
-    df = pd.read_csv(DATA_DIR / "tyler/tyler_wdms_APOGEE.csv").query("Teff_1 > 3200")
+    df = pd.read_csv(DATA_DIR / "raw/tyler/tyler_wdms_APOGEE.csv").query("Teff_1 > 3200")
     df = df.rename(columns=rename)
     df["alpha_fe"]   = df["alpha_m"] + df["m_h"] - df["fe_h"]
     df["e_alpha_fe"] = np.sqrt(df["e_alpha_m"]**2 + df["e_m_h"]**2 + df["e_fe_h"]**2)
@@ -191,7 +191,7 @@ def _process_astra() -> pd.DataFrame:
     for el in _h_elems:
         rename[f"{el}_h_flags"] = f"flag_{el}_fe"
 
-    df = (pd.read_csv(DATA_DIR / "tyler/tyler_wdms_ASTRA.csv")
+    df = (pd.read_csv(DATA_DIR / "raw/tyler/tyler_wdms_ASTRA.csv")
             .query("Teff_1 > 3200 & flag_bad == False"))
     df = df.rename(columns=rename)
 
@@ -215,9 +215,9 @@ def _process_astra() -> pd.DataFrame:
 
 def _process_lamost() -> pd.DataFrame:
     """Load LAMOST WD+MS data; fetches [Fe/H] errors from VizieR and caches locally."""
-    cache_path = DATA_DIR / "merge/wdms_lamost_efeh.csv"
+    cache_path = DATA_DIR / "external/wdms_lamost_efeh.csv"
 
-    lamost = pd.read_csv(DATA_DIR / "merge/wdms_lamost.csv")
+    lamost = pd.read_csv(DATA_DIR / "external/wdms_lamost.csv")
     lamost = lamost.rename(columns={"[Fe/H]": "fe_h", "logg": "ms_logg", "Teff.1": "ms_teff"})
     lamost = lamost[lamost.Teff > 0]
     lamost = lamost.sort_values("snrg", ascending=False).drop_duplicates(subset=["source_id"])
@@ -270,7 +270,7 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
     # ── 1. Load and quality-cut main catalog ──────────────────────────────
     print("Loading main catalog…")
     main_cat = pd.read_csv(
-        DATA_DIR / "tyler/WDMS_total_ages_correct_models_cut_down.csv",
+        DATA_DIR / "raw/tyler/WDMS_total_ages_correct_models_cut_down.csv",
         low_memory=False,
     )
     main_cat["tot_age_error_upper"]    = main_cat["tot_age_error_upper"].fillna(999)
@@ -308,11 +308,11 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
     metallicity = _apply_flag_thresholds(metallicity)
     metallicity = metallicity.query("fe_h > -900").copy()
 
-    out_metal_pqt = DATA_DIR / "metallicity.pqt"
+    out_metal_pqt = DATA_DIR / "catalogs/metallicity.pqt"
     metallicity.to_parquet(out_metal_pqt, index=False)
     print(f"\nSaved {out_metal_pqt}  ({len(metallicity)} rows)")
 
-    out_metal_csv = DATA_DIR / "metallicity.csv"
+    out_metal_csv = DATA_DIR / "catalogs/metallicity.csv"
     metallicity.to_parquet(out_metal_csv, index=False)
     print(f"\nSaved {out_metal_csv}  ({len(metallicity)} rows)")
 
@@ -353,8 +353,8 @@ def main(correct_ages: bool = False, check_correct_ages: bool = False) -> None:
     print()
     combined["ms_evol_class"] = evolutionary_state.classify(combined)
 
-    out_combined_pqt = DATA_DIR / "combined.pqt"
-    out_combined_csv = DATA_DIR / "combined.csv"
+    out_combined_pqt = DATA_DIR / "catalogs/combined.pqt"
+    out_combined_csv = DATA_DIR / "catalogs/combined.csv"
     combined.to_parquet(out_combined_pqt, index=False)
     combined.to_csv(out_combined_csv, index=False)
     print(f"Saved {out_combined_pqt}  ({len(combined)} rows, "

@@ -1,7 +1,7 @@
 """Stitch per-population SED fit parquets into ages.pqt.
 
-Reads thick.pqt, thin.pqt, mixed.pqt from DATA_DIR, merges them, assigns the
-best-fit atmosphere model per star using Vincent+2024 spectral types, applies
+Reads thick.pqt, thin.pqt, mixed.pqt from WDWD_STITCH_DIR, merges them, assigns
+the best-fit atmosphere model per star using Vincent+2024 spectral types, applies
 a cool-WD Teff correction, then runs the age interpolation for each population.
 
 Requires:
@@ -11,7 +11,7 @@ Requires:
     defaults to ~/observational/catalogs/XP-spectra/vincent2024.pqt)
 
 Usage:
-    python -m catalog.wdwd.stitch [--inpath data/] [--outpath data/ages.pqt]
+    python -m catalog.wdwd.stitch [--inpath data/build/wdwd_stitch_input] [--outpath data/catalogs/ages.pqt]
 """
 
 import os
@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ..config import DATA_DIR
+from ..config import DATA_DIR, WDWD_STITCH_DIR
 from ..corrections import correct_cool_wd_mass
 
 _COLUMNS = ["teff", "std_tt", "radius", "std_rr", "cov_rt",
@@ -135,7 +135,7 @@ def correct_teff(data: pd.DataFrame, rad_func, mass_func) -> pd.DataFrame:
     return data
 
 
-def main(inpath: Path = DATA_DIR, outpath: Path = DATA_DIR / "ages.pqt",
+def main(inpath: Path = WDWD_STITCH_DIR, outpath: Path = DATA_DIR / "catalogs/ages.pqt",
          correct_ages: bool = False) -> None:
     from measureages import parallel_forloop
 
@@ -182,8 +182,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--inpath",       type=Path, default=DATA_DIR)
-    parser.add_argument("--outpath",      type=Path, default=DATA_DIR / "ages.pqt")
+    parser.add_argument("--inpath",       type=Path, default=WDWD_STITCH_DIR)
+    parser.add_argument("--outpath",      type=Path, default=DATA_DIR / "catalogs/ages.pqt")
     parser.add_argument("--correct-ages", action="store_true",
                         help="Recompute cooling and total ages from corrected mass/Teff for cool WDs")
     args = parser.parse_args()

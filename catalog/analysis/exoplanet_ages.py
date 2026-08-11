@@ -30,9 +30,10 @@ def _with_retries(fn, *args, retries=5, delay=30, **kwargs):
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 NICOLA_CAT    = Path.home() / "observational/catalogs/nicola_wds/ngf21_wds.pqt"
-EXOPLANET_CSV = DATA_DIR / "wdms_exoplanets_all.csv"
-
 EXO_DIR    = DATA_DIR / "exoplanets"
+EXOPLANET_CSV = EXO_DIR / "wdms_exoplanets_all.csv"
+
+
 CHAINS_DIR = EXO_DIR / "chains"
 
 PHOT_INPUT  = EXO_DIR / "phot_input.parquet"
@@ -254,7 +255,7 @@ def run_measure_ages():
 
 def compare_to_catalog(ages):
 	"""Print side-by-side comparison of MCMC results vs Tyler's main catalog."""
-	tyler = pd.read_csv(DATA_DIR / "tyler/WDMS_total_ages_correct_models_cut_down.csv")
+	tyler = pd.read_csv(DATA_DIR / "raw/tyler/WDMS_total_ages_correct_models_cut_down.csv")
 	tyler["source_id"] = tyler["source_id"].astype(np.int64)
 
 	try:
@@ -397,7 +398,7 @@ def write_latex_table(ages):
 
 
 def get_catalog_ids(exo):
-	catalog_path = DATA_DIR / "tyler/WDMS_total_ages_correct_models_cut_down.csv"
+	catalog_path = DATA_DIR / "raw/tyler/WDMS_total_ages_correct_models_cut_down.csv"
 	tyler_ids = set(
 		pd.read_csv(catalog_path, usecols=["source_id"])["source_id"].astype(np.int64)
 	)
@@ -405,7 +406,7 @@ def get_catalog_ids(exo):
 
 
 def load_catalog_ages(exo_full, catalog_ids):
-	catalog_path = DATA_DIR / "tyler/WDMS_total_ages_correct_models_cut_down.csv"
+	catalog_path = DATA_DIR / "raw/tyler/WDMS_total_ages_correct_models_cut_down.csv"
 	tyler = pd.read_csv(catalog_path)
 	tyler["source_id"] = tyler["source_id"].astype(np.int64)
 

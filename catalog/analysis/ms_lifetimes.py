@@ -29,7 +29,7 @@ def main():
         x=model["mass_array"], y=10**model["logteff"], z=model["age_cool"]
     )
 
-    ifmr = pd.read_csv(DATA_DIR / "MESA_IFMR/ifmr_data.csv")
+    ifmr = pd.read_csv(DATA_DIR / "raw/mesa_ifmr/ifmr_data.csv")
 
     ifmr_dir = str(TYLER_CODE_DIR / "init_mass_to_mslife")
 

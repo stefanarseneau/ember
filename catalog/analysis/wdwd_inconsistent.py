@@ -71,7 +71,7 @@ def main():
 
     plt, _ = setup_matplotlib()
 
-    pairs_path = DATA_DIR / "wdwd_pairs.pqt"
+    pairs_path = DATA_DIR / "catalogs/wdwd_pairs.pqt"
     if not pairs_path.exists():
         raise FileNotFoundError(
             f"{pairs_path} not found — run:\n"

@@ -35,13 +35,13 @@ GIANT_CMD_GIANT_ABS_MAG_MAX = 4.0
 # Isochrone grid — plotting context only (catalog.analysis.ms_evol_cmd), not
 # used by the classification itself.
 GIANT_CMD_AGE_GRID_GYR = [0.3, 0.5, 1, 2, 3, 5, 7, 10, 13.5]
-MIST_EVOL_GRID_CACHE = DATA_DIR / "mist_evol_grid.pqt"
+MIST_EVOL_GRID_CACHE = DATA_DIR / "build/mist_evol_grid.pqt"
 
 STYLE_FILE       = REPO_ROOT / "stefan.mplstyle"
-WDWD_STITCH_DIR  = DATA_DIR / "wdwd_stitch_input"
+WDWD_STITCH_DIR  = DATA_DIR / "build/wdwd_stitch_input"
 
 # El-Badry+2021 wide binary catalog (Gaia EDR3), zenodo record 4435257.
 # ELBADRY_CACHE is a compact index (WD+WD and WD+MS rows only, 4 columns)
 # built by catalog.build --elbadry from the full FITS download.
 ELBADRY_URL   = "https://zenodo.org/api/records/4435257/files/all_columns_catalog.fits.gz/content"
-ELBADRY_CACHE = DATA_DIR / "elbadry_wdpairs.pqt"
+ELBADRY_CACHE = DATA_DIR / "external/elbadry_wdpairs.pqt"

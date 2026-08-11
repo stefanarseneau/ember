@@ -31,7 +31,7 @@ from .stitch import main as _stitch_main
 from ..bitmasks import _make_photometry_bitmask
 
 
-_TYLER_WDWD = DATA_DIR / "tyler/tyler_wdwd.csv"
+_TYLER_WDWD = DATA_DIR / "raw/tyler/tyler_wdwd.csv"
 
 # Columns to load from tyler_wdwd.csv (per component)
 _TYLER_COLS = [
@@ -163,8 +163,8 @@ _PAIR_LEVEL_COLS = ["min_sep", "wtd_par", "e_wtd_par"]
 # ── Step 1: stitch ────────────────────────────────────────────────────────
 
 def stitch(correct_ages: bool = False) -> None:
-    """Run the stitch pipeline: thick/thin/mixed parquets → data/ages.pqt."""
-    _stitch_main(inpath=WDWD_STITCH_DIR, outpath=DATA_DIR / "ages.pqt",
+    """Run the stitch pipeline: thick/thin/mixed parquets → data/catalogs/ages.pqt."""
+    _stitch_main(inpath=WDWD_STITCH_DIR, outpath=DATA_DIR / "catalogs/ages.pqt",
                  correct_ages=correct_ages)
 
 
@@ -218,7 +218,7 @@ def build_pairs() -> None:
     XP-spectrum parameters carry the _xp suffix; H-atmosphere SED parameters
     retain Tyler's naming (TeffH, MassH, cool_ageH, …).
     """
-    ages_path = DATA_DIR / "ages.pqt"
+    ages_path = DATA_DIR / "catalogs/ages.pqt"
     for path in (_TYLER_WDWD, ages_path, ELBADRY_CACHE):
         if not path.exists():
             raise FileNotFoundError(f"{path} not found — run prerequisite steps first")
@@ -344,7 +344,7 @@ def build_pairs() -> None:
         )
 
     # ── 9. Save ───────────────────────────────────────────────────────────
-    out          = DATA_DIR / "wdwd_pairs.pqt"
+    out          = DATA_DIR / "catalogs/wdwd_pairs.pqt"
     n_xp_valid   = pairs["dt_log_age_xp"].notna().sum()
     n_mesa_valid = pairs["dt_tot_age_MESA_IFMR"].notna().sum()
     pairs.to_parquet(out, index=False)

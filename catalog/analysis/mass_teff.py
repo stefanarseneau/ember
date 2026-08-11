@@ -44,8 +44,8 @@ def main():
     plt, _ = setup_matplotlib()
     combined, *_ = load_catalog()
 
-    crys = pd.read_csv(DATA_DIR / "merge_data/crystallization.csv")
-    ifmr = pd.read_csv(DATA_DIR / "MESA_IFMR/ifmr_data.csv")
+    crys = pd.read_csv(DATA_DIR / "external/crystallization.csv")
+    ifmr = pd.read_csv(DATA_DIR / "raw/mesa_ifmr/ifmr_data.csv")
 
     total_age_interpolator = make_totalage_interpolator(ifmr)
 
@@ -82,7 +82,7 @@ def main():
     #ax.plot(np.log10(teff_20pct), mass_20pct, c="lime", lw=3, label="20\\% Crystallized", zorder=2)
     #ax.plot(np.log10(teff_80pct), mass_80pct, c="lime", ls="--", lw=3, label="80\\% Crystallized", zorder=2)
 
-    correction_data = np.load(DATA_DIR / "correction_coefficients.npy")
+    correction_data = np.load(DATA_DIR / "build/correction_coefficients.npy")
     mass_med, coeff = correction_data[0], correction_data[1:]
     correction_poly = np.poly1d(coeff)
     correction_teffs = np.linspace(6000, 4000, 100)
